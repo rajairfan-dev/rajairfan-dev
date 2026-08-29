@@ -1,66 +1,39 @@
-import { supabase } from './supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 
-export async function askHotelAI(userQuery: string, roomNumber?: string) {
+// Supabase Connection Setup
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export async function getHotelContext() {
   try {
-    const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+    // Database se dynamic hotel settings fetch karein
+    const { data, error } = await supabase
+      .from('hotel_settings')
+      .select('*')
+      .limit(1)
+      .single();
 
-    if (!apiKey) {
-      console.error("Error: VITE_GROQ_API_KEY is missing!");
-      return "API Key configuration error. Please check your Vercel settings.";
+    if (error || !data) {
+      console.warn("Hotel settings not found, using default fallback.");
+      return {
+        hotelName: 'AlpineStay',
+        wifiName: 'AlpineStay_Guest',
+        wifiPass: 'alpine2026',
+        breakfastHours: '7:00 AM - 10:30 AM',
+        checkoutTime: '11:00 AM'
+      };
     }
 
-    let guestContext = "Guest details not specified.";
-    if (roomNumber) {
-      const { data } = await supabase.from('guests').select('*').eq('room_number', roomNumber).maybeSingle();
-      if (data) {
-        guestContext = `Guest Name: ${data.name}, Room: ${data.room_number}, Status: ${data.status}`;
-      }
-    }
-
-    const systemPrompt = `
-      You are AlpineStay AI, a high-end luxury hotel concierge assistant. 
-      Hotel Details:
-      - Wi-Fi Name: AlpineStay_Guest (Password: alpine2026)
-      - Breakfast Time: 7:00 AM to 10:30 AM at Dining Hall
-      - Checkout Time: 11:00 AM
-      - Room Service: 24/7 Available
-      - Room Availability: Deluxe Rooms and Suites are available.
-      
-      Current Guest Context: ${guestContext}
-      
-      STRICT FORMATTING RULES:
-      - Use bullet symbol '•' for lists instead of dashes '-'.
-      - Put a double line break (\n\n) between main points for ultra-clean spacing.
-      - Use **bold** text for key highlights and headers.
-      - Keep responses professional, warm, and structured.
-    `;
-
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey.trim()}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-oss-20b",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userQuery }
-        ],
-        temperature: 0.5
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Groq API Response Error:", data);
-      return `API Error: ${data.error?.message || "Failed to fetch response"}`;
-    }
-
-    return data.choices?.[0]?.message?.content || "No response generated.";
-  } catch (error: any) {
-    console.error("Network or Code Catch Error:", error);
-    return "Connection error. Please check your internet or API settings.";
+    return {
+      hotelName: data.hotel_name,
+      wifiName: data.wifi_name,
+      wifiPass: data.wifi_password,
+      breakfastHours: data.breakfast_hours,
+      checkoutTime: data.checkout_time
+    };
+  } catch (err) {
+    console.error("Error fetching context:", err);
+    return null;
   }
 }
