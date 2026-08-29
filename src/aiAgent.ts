@@ -24,7 +24,6 @@ export async function getHotelContext(userLang: string = 'en') {
       };
     }
 
-    // Dynamic language translation fetch karein (fallback to English)
     const translations = data.translations || {};
     const langData = translations[userLang] || translations['en'] || {};
 
@@ -40,4 +39,29 @@ export async function getHotelContext(userLang: string = 'en') {
     console.error("Error fetching context:", err);
     return null;
   }
+}
+
+// AI Engine Response Handler (Restored for App.tsx import)
+export async function askHotelAI(userMessage: string, roomNumber: string = '', userLang: string = 'en') {
+  const context = await getHotelContext(userLang);
+
+  if (!context) {
+    return "I am currently unable to fetch hotel details. Please contact the front desk.";
+  }
+
+  const query = userMessage.toLowerCase();
+
+  if (query.includes('wifi') || query.includes('internet') || query.includes('password')) {
+    return `**Wi-Fi Connection Details:**\nNetwork: **${context.wifiName}**\nPassword: **${context.wifiPass}**`;
+  }
+
+  if (query.includes('breakfast') || query.includes('khana') || query.includes('essen')) {
+    return `**Breakfast Hours:**\nOur daily breakfast is served from **${context.breakfastHours}**.`;
+  }
+
+  if (query.includes('checkout') || query.includes('check out') || query.includes('leave')) {
+    return `**Check-out Time:**\nStandard check-out is at **${context.checkoutTime}**.`;
+  }
+
+  return `${context.welcomeMsg}\n\nHow can I assist you further today? You can ask about Wi-Fi, breakfast hours, or check-out rules.`;
 }
