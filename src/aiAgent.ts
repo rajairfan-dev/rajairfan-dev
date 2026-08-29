@@ -1,8 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from './supabaseClient';
 
 export async function getHotelContext(userLang: string = 'en') {
   try {
@@ -41,7 +37,6 @@ export async function getHotelContext(userLang: string = 'en') {
   }
 }
 
-// AI Engine Response Handler (Restored for App.tsx import)
 export async function askHotelAI(userMessage: string, roomNumber: string = '', userLang: string = 'en') {
   const context = await getHotelContext(userLang);
 
