@@ -38,7 +38,7 @@ export async function askHotelAI(userQuery: string, roomNumber?: string) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.2-3b-preview",
+        model: "openai/gpt-oss-20b",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userQuery }
