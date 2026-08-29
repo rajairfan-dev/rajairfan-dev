@@ -28,10 +28,11 @@ export async function askHotelAI(userQuery: string, roomNumber?: string) {
       
       Current Guest Context: ${guestContext}
       
-      Formatting Instructions:
-      - Do NOT use markdown tables or raw HTML like <br>.
-      - Respond in clean, readable plain text with clear bullet points.
-      - Keep answers polite, concise, and helpful.
+      IMPORTANT FORMATTING RULES:
+      - ALWAYS start every bullet point on a NEW line using actual line breaks (\n).
+      - Do NOT wrap bullet points in a single continuous paragraph.
+      - Do NOT use markdown tables or raw HTML tags like <br>.
+      - Keep responses polite, readable, and structured.
     `;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -46,7 +47,7 @@ export async function askHotelAI(userQuery: string, roomNumber?: string) {
           { role: "system", content: systemPrompt },
           { role: "user", content: userQuery }
         ],
-        temperature: 0.7
+        temperature: 0.5
       })
     });
 
