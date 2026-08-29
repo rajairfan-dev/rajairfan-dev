@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, KeyRound, Globe, Send, Bot } from 'lucide-react';
+import { LayoutDashboard, Users, KeyRound, Globe, Send, Bot, Menu, X } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI } from './aiAgent';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('portal');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
   const [guests, setGuests] = useState<any[]>([]);
@@ -38,6 +39,7 @@ export default function App() {
       setRoom('');
       fetchGuests();
       setActiveTab('guests');
+      setIsSidebarOpen(false);
     }
   };
 
@@ -56,10 +58,31 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-800">
+    <div className="flex flex-col md:flex-row h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
+      {/* Mobile Top Header */}
+      <div className="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center z-20">
+        <div className="font-bold text-lg flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-sm">A</div>
+          AlpineStay
+        </div>
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1 rounded-lg bg-slate-800">
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Sidebar Overlay for Mobile */}
+      {isSidebarOpen && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)} 
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+        />
+      )}
+
       {/* Sidebar Navigation */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col">
-        <div className="p-6 font-bold text-xl tracking-wide flex items-center gap-2 border-b border-slate-800">
+      <aside className={`fixed md:static inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col z-40 transform transition-transform duration-200 ease-in-out ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      }`}>
+        <div className="p-6 font-bold text-xl tracking-wide hidden md:flex items-center gap-2 border-b border-slate-800">
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black">A</div>
           AlpineStay
         </div>
@@ -74,7 +97,10 @@ export default function App() {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
                   activeTab === item.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 }`}
@@ -88,11 +114,11 @@ export default function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="flex-1 overflow-y-auto p-4 md:p-8 w-full">
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <div className="grid grid-cols-3 gap-6">
+            <h1 className="text-xl md:text-2xl font-bold">Dashboard</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <p className="text-sm text-slate-500">Total Checked-In Guests</p>
                 <p className="text-3xl font-extrabold text-slate-900 mt-2">{guests.length}</p>
@@ -106,8 +132,8 @@ export default function App() {
         )}
 
         {activeTab === 'guests' && (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-            <h2 className="text-xl font-bold">Live Guest Directory</h2>
+          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+            <h2 className="text-lg md:text-xl font-bold">Live Guest Directory</h2>
             {guests.map((g) => (
               <div key={g.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl">
                 <div>
@@ -121,8 +147,8 @@ export default function App() {
         )}
 
         {activeTab === 'checkin' && (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 max-w-md space-y-4">
-            <h2 className="text-xl font-bold">Guest Express Check-In</h2>
+          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 max-w-md space-y-4">
+            <h2 className="text-lg md:text-xl font-bold">Guest Express Check-In</h2>
             <form onSubmit={handleCheckIn} className="space-y-4">
               <input type="text" placeholder="Guest Full Name" value={name} onChange={e => setName(e.target.value)} className="w-full p-3 border rounded-xl" required />
               <input type="text" placeholder="Room Number" value={room} onChange={e => setRoom(e.target.value)} className="w-full p-3 border rounded-xl" required />
@@ -134,25 +160,25 @@ export default function App() {
         )}
 
         {activeTab === 'portal' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 max-w-2xl h-[600px] flex flex-col">
-            <div className="p-4 border-b flex justify-between items-center bg-indigo-600 text-white rounded-t-2xl">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 w-full max-w-2xl h-[calc(100vh-100px)] md:h-[600px] flex flex-col">
+            <div className="p-3 md:p-4 border-b flex justify-between items-center bg-indigo-600 text-white rounded-t-2xl gap-2">
               <div className="flex items-center gap-2">
-                <Bot size={24} />
-                <span className="font-bold">AlpineStay AI Concierge</span>
+                <Bot size={20} />
+                <span className="font-bold text-sm md:text-base">AlpineStay AI Concierge</span>
               </div>
               <input 
                 type="text" 
-                placeholder="Your Room # (e.g. 204)" 
+                placeholder="Room #" 
                 value={chatRoom} 
                 onChange={e => setChatRoom(e.target.value)}
-                className="px-3 py-1 text-slate-900 text-sm rounded-lg border-none"
+                className="w-20 md:w-32 px-2 py-1 text-slate-900 text-xs md:text-sm rounded-lg border-none focus:outline-none"
               />
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.map((m, idx) => (
                 <div key={idx} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs md:max-w-md p-3 rounded-2xl text-sm ${m.sender === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'}`}>
+                  <div className={`max-w-[85%] md:max-w-md p-3 rounded-2xl text-xs md:text-sm ${m.sender === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'}`}>
                     {m.text}
                   </div>
                 </div>
@@ -160,16 +186,16 @@ export default function App() {
               {aiLoading && <p className="text-xs text-slate-400 italic">AI Assistant is thinking...</p>}
             </div>
 
-            <form onSubmit={handleSendMessage} className="p-4 border-t flex gap-2">
+            <form onSubmit={handleSendMessage} className="p-3 md:p-4 border-t flex gap-2">
               <input 
                 type="text" 
-                placeholder="Ask Wi-Fi pass, breakfast time, or room info..." 
+                placeholder="Ask Wi-Fi pass, breakfast time..." 
                 value={chatInput} 
                 onChange={e => setChatInput(e.target.value)} 
-                className="flex-1 p-3 border rounded-xl text-sm focus:outline-none focus:border-indigo-600"
+                className="flex-1 p-2 md:p-3 border rounded-xl text-xs md:text-sm focus:outline-none focus:border-indigo-600"
               />
-              <button type="submit" className="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700">
-                <Send size={18} />
+              <button type="submit" className="p-2 md:p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700">
+                <Send size={16} />
               </button>
             </form>
           </div>
@@ -177,4 +203,4 @@ export default function App() {
       </main>
     </div>
   );
-              }
+      }
