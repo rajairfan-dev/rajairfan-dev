@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient';
 
 // Key Vercel ki Environment Variable se aayegi
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY; 
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || (import.meta as any).env?.GROQ_API_KEY; 
 
 export async function askHotelAI(userQuery: string, roomNumber?: string) {
   try {
