@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, KeyRound, Globe, Send, Bot, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, KeyRound, Globe, Settings as SettingsIcon, Send, Bot, Menu, X } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI } from './aiAgent';
+import Settings from './Settings';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('portal');
@@ -103,6 +104,7 @@ export default function App() {
             { id: 'guests', label: 'Guests', icon: Users },
             { id: 'checkin', label: 'Check-In', icon: KeyRound },
             { id: 'portal', label: 'AI Concierge Portal', icon: Globe },
+            { id: 'settings', label: 'Settings & Languages', icon: SettingsIcon },
           ].map(item => {
             const Icon = item.icon;
             return (
@@ -211,6 +213,8 @@ export default function App() {
             </form>
           </div>
         )}
+
+        {activeTab === 'settings' && <Settings />}
       </main>
     </div>
   );
