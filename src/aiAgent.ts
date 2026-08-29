@@ -18,7 +18,7 @@ export async function askHotelAI(userQuery: string, roomNumber?: string) {
     }
 
     const systemPrompt = `
-      You are AlpineStay AI, an intelligent hotel concierge assistant. 
+      You are AlpineStay AI, a high-end luxury hotel concierge assistant. 
       Hotel Details:
       - Wi-Fi Name: AlpineStay_Guest (Password: alpine2026)
       - Breakfast Time: 7:00 AM to 10:30 AM at Dining Hall
@@ -28,11 +28,11 @@ export async function askHotelAI(userQuery: string, roomNumber?: string) {
       
       Current Guest Context: ${guestContext}
       
-      IMPORTANT FORMATTING RULES:
-      - ALWAYS start every bullet point on a NEW line using actual line breaks (\n).
-      - Do NOT wrap bullet points in a single continuous paragraph.
-      - Do NOT use markdown tables or raw HTML tags like <br>.
-      - Keep responses polite, readable, and structured.
+      STRICT FORMATTING RULES:
+      - Use bullet symbol '•' for lists instead of dashes '-'.
+      - Put a double line break (\n\n) between main points for ultra-clean spacing.
+      - Use **bold** text for key highlights and headers.
+      - Keep responses professional, warm, and structured.
     `;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
