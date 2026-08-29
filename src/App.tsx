@@ -178,7 +178,7 @@ export default function App() {
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.map((m, idx) => (
                 <div key={idx} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] md:max-w-md p-3 rounded-2xl text-xs md:text-sm ${m.sender === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'}`}>
+                  <div className={`max-w-[85%] md:max-w-md p-3 rounded-2xl text-xs md:text-sm whitespace-pre-wrap ${m.sender === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'}`}>
                     {m.text}
                   </div>
                 </div>
@@ -203,4 +203,4 @@ export default function App() {
       </main>
     </div>
   );
-      }
+                }
