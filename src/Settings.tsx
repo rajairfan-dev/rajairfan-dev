@@ -36,7 +36,7 @@ export default function Settings() {
 
   const fetchSettings = async () => {
     try {
-      const { data } = await supabase.from('hotel_settings').select('*').limit(1).single();
+      const { data, error } = await supabase.from('hotel_settings').select('*').limit(1).maybeSingle();
 
       if (data) {
         setRecordId(data.id);
@@ -71,14 +71,21 @@ export default function Settings() {
     e.preventDefault();
     setSaving(true);
     try {
-      const { error } = await supabase.from('hotel_settings').upsert({
-        id: recordId,
+      const payload: any = {
         ...formData,
         translations
-      });
+      };
+      
+      // Only attach id if it actually exists in database
+      if (recordId) {
+        payload.id = recordId;
+      }
+
+      const { error } = await supabase.from('hotel_settings').upsert(payload);
 
       if (error) throw error;
       alert('Settings and translations saved successfully!');
+      fetchSettings(); // Refresh local state
     } catch (error: any) {
       alert('Error: ' + error.message);
     } finally {
@@ -178,4 +185,4 @@ export default function Settings() {
       </form>
     </div>
   );
-    }
+              }
