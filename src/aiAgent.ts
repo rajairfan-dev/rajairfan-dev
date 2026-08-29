@@ -38,7 +38,7 @@ export async function askHotelAI(userQuery: string, roomNumber?: string) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "mixtral-8x7b-32768",
+        model: "llama-3.2-3b-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userQuery }
