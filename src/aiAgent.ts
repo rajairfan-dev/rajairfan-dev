@@ -28,7 +28,10 @@ export async function askHotelAI(userQuery: string, roomNumber?: string) {
       
       Current Guest Context: ${guestContext}
       
-      Respond politely, helpfully, and concisely to the guest.
+      Formatting Instructions:
+      - Do NOT use markdown tables or raw HTML like <br>.
+      - Respond in clean, readable plain text with clear bullet points.
+      - Keep answers polite, concise, and helpful.
     `;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
