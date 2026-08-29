@@ -57,6 +57,17 @@ export default function App() {
     setAiLoading(false);
   };
 
+  // Helper function to render **bold** text nicely
+  const renderFormattedText = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
       {/* Mobile Top Header */}
@@ -178,8 +189,8 @@ export default function App() {
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.map((m, idx) => (
                 <div key={idx} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] md:max-w-md p-3 rounded-2xl text-xs md:text-sm whitespace-pre-wrap ${m.sender === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'}`}>
-                    {m.text}
+                  <div className={`max-w-[85%] md:max-w-md p-3.5 rounded-2xl text-xs md:text-sm whitespace-pre-wrap leading-relaxed ${m.sender === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none border border-slate-200/60 shadow-sm'}`}>
+                    {renderFormattedText(m.text)}
                   </div>
                 </div>
               ))}
@@ -203,4 +214,4 @@ export default function App() {
       </main>
     </div>
   );
-                }
+      }
