@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Users, KeyRound, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, Users, KeyRound, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle, Search } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI } from './aiAgent';
 import Settings from './Settings';
@@ -11,13 +11,14 @@ interface Message {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'guests' | 'ai' | 'settings'>('ai');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'guests' | 'ai' | 'settings'>('guests');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Dashboard / Hotel Management States
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
   const [guests, setGuests] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
   // AI Chat States
@@ -129,9 +130,14 @@ export default function App() {
     }
   };
 
+  const filteredGuests = guests.filter(
+    (g) =>
+      g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      g.room_number.toString().toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
-      {/* Sidebar Overlay for Mobile */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -139,7 +145,6 @@ export default function App() {
         />
       )}
 
-      {/* Sidebar Navigation */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out flex flex-col justify-between ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -214,23 +219,9 @@ export default function App() {
             </button>
           </nav>
         </div>
-
-        <div className="p-4 border-t border-slate-800">
-          <div className="flex items-center space-x-3 px-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold">
-              ADMIN
-            </div>
-            <div>
-              <p className="text-xs font-medium">Hotel Administrator</p>
-              <p className="text-[10px] text-slate-400">Northern Italy Stay</p>
-            </div>
-          </div>
-        </div>
       </aside>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Top Header */}
         <header className="bg-white border-b border-slate-200 p-4 flex items-center justify-between">
           <button
             onClick={() => setIsSidebarOpen(true)}
@@ -244,7 +235,6 @@ export default function App() {
           <div className="w-6 h-6 lg:hidden" />
         </header>
 
-        {/* Tab Views */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'dashboard' && (
             <div className="p-6 space-y-6">
@@ -274,13 +264,12 @@ export default function App() {
                     <MessageSquare className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 font-medium">AI Concierge Engine</p>
+                    <p className="text-xs text-slate-500 font-medium">AI Concierge</p>
                     <h3 className="text-xl font-bold text-purple-600">100+ Languages</h3>
                   </div>
                 </div>
               </div>
 
-              {/* Check-In Form */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h3 className="text-base font-bold text-slate-800 mb-4">Quick Guest Check-In</h3>
                 <form onSubmit={handleAddGuest} className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -314,14 +303,26 @@ export default function App() {
           {activeTab === 'guests' && (
             <div className="p-6">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-200 flex justify-between items-center">
+                <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <h3 className="font-bold text-slate-800">Checked-In Guests</h3>
-                  <button
-                    onClick={fetchGuests}
-                    className="text-xs text-indigo-600 hover:underline font-medium"
-                  >
-                    Refresh List
-                  </button>
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search name or room..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 pr-4 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-64"
+                      />
+                    </div>
+                    <button
+                      onClick={fetchGuests}
+                      className="text-xs text-indigo-600 hover:underline font-medium whitespace-nowrap"
+                    >
+                      Refresh
+                    </button>
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm text-slate-600">
@@ -334,14 +335,14 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {guests.length === 0 ? (
+                      {filteredGuests.length === 0 ? (
                         <tr>
                           <td colSpan={4} className="p-6 text-center text-slate-400">
-                            No active guests registered yet.
+                            {searchQuery ? 'No matching guests found.' : 'No active guests registered yet.'}
                           </td>
                         </tr>
                       ) : (
-                        guests.map((g) => (
+                        filteredGuests.map((g) => (
                           <tr key={g.id} className="hover:bg-slate-50">
                             <td className="p-4 font-medium text-slate-800">{g.name}</td>
                             <td className="p-4">
@@ -373,7 +374,6 @@ export default function App() {
 
           {activeTab === 'ai' && (
             <div className="flex flex-col h-[calc(100vh-65px)] bg-slate-100">
-              {/* Room Bar */}
               <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow-sm">
                 <div className="flex items-center space-x-2">
                   <Bot className="w-5 h-5" />
@@ -391,7 +391,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Chat Container */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg) => (
                   <div
@@ -431,7 +430,6 @@ export default function App() {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Quick Prompt Chips */}
               <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 overflow-x-auto flex space-x-2">
                 {quickPrompts.map((prompt, idx) => (
                   <button
@@ -445,7 +443,6 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Chat Input */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -480,4 +477,4 @@ export default function App() {
       </div>
     </div>
   );
-  }
+    }
