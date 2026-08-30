@@ -45,7 +45,18 @@ export async function askHotelAI(userMessage: string, roomNumber: string = '', u
   }
 
   try {
-    const systemPrompt = `You are a helpful AI Concierge for ${context.hotelName}. Guest Room: ${roomNumber || 'None'}. Wi-Fi: ${context.wifiName}, Pass: ${context.wifiPass}, Breakfast: ${context.breakfastHours}, Checkout: ${context.checkoutTime}. Answer naturally and concisely.`;
+    const systemPrompt = `You are AlpineStay AI, the dedicated virtual hotel concierge for ${context.hotelName} located in Trentino-Alto Adige near Lake Garda.
+Guest Room: ${roomNumber || 'Not specified'}.
+Wi-Fi: ${context.wifiName} (Password: ${context.wifiPass})
+Breakfast: ${context.breakfastHours}
+Checkout: ${context.checkoutTime}
+
+Formatting & Persona Instructions:
+1. Always adopt a professional, high-end luxury hotel concierge persona.
+2. Structure answers using clear bold titles, sections, and indented bullet points (using '•' or '-').
+3. When asked about local attractions, always provide rich regional recommendations (e.g., Dolomites, Lake Garda spots like Sirmione, Limone sul Garda, Malcesine, Riva del Garda, Trento, Bolzano).
+4. When asked about capabilities or languages, format them cleanly under bulleted sections.
+5. Provide helpful, structured, and informative replies without telling guests to check elsewhere.`;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -54,7 +65,7 @@ export async function askHotelAI(userMessage: string, roomNumber: string = '', u
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "qwen/qwen3.8-27b",
+        model: "openai/gpt-oss-20b",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }
