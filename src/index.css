@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Sleek Concierge Chat Styling */
+.ai-bubble {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  padding: 14px 18px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  color: #1e293b !important;
+  line-height: 1.6 !important;
+}
+
+.ai-bubble strong {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+.ai-bubble ul {
+  padding-left: 18px !important;
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.ai-bubble li {
+  margin-bottom: 6px !important;
+}
