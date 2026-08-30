@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Users, KeyRound, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Users, KeyRound, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI } from './aiAgent';
 import Settings from './Settings';
@@ -89,6 +89,25 @@ export default function App() {
     }
   }
 
+  async function handleCheckOutGuest(id: string) {
+    if (!window.confirm('Are you sure you want to check out this guest?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('guests')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        alert('Error checking out guest: ' + error.message);
+      } else {
+        fetchGuests();
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    }
+  }
+
   const handleSendAIChat = async (textToSend?: string) => {
     const query = textToSend || chatInput;
     if (!query.trim() || aiLoading) return;
@@ -112,7 +131,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
-      {/* Sidebar for Mobile Overlay */}
+      {/* Sidebar Overlay for Mobile */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -235,14 +254,14 @@ export default function App() {
                     <Users className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 font-medium">Total Active Guests</p>
+                    <p className="text-xs text-slate-500 font-medium">Active Guests</p>
                     <h3 className="text-2xl font-bold text-slate-800">{guests.length}</h3>
                   </div>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
                   <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                    <KeyRound className="w-6 h-6" />
+                    <CheckCircle className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 font-medium">System Status</p>
@@ -311,12 +330,13 @@ export default function App() {
                         <th className="p-4">Guest Name</th>
                         <th className="p-4">Room #</th>
                         <th className="p-4">Check-In Date</th>
+                        <th className="p-4 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {guests.length === 0 ? (
                         <tr>
-                          <td colSpan={3} className="p-6 text-center text-slate-400">
+                          <td colSpan={4} className="p-6 text-center text-slate-400">
                             No active guests registered yet.
                           </td>
                         </tr>
@@ -324,9 +344,22 @@ export default function App() {
                         guests.map((g) => (
                           <tr key={g.id} className="hover:bg-slate-50">
                             <td className="p-4 font-medium text-slate-800">{g.name}</td>
-                            <td className="p-4">{g.room_number}</td>
+                            <td className="p-4">
+                              <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-semibold text-xs rounded-full">
+                                Room {g.room_number}
+                              </span>
+                            </td>
                             <td className="p-4 text-xs text-slate-400">
                               {new Date(g.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="p-4 text-right">
+                              <button
+                                onClick={() => handleCheckOutGuest(g.id)}
+                                className="inline-flex items-center space-x-1 px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-semibold transition"
+                              >
+                                <LogOut className="w-3.5 h-3.5" />
+                                <span>Check Out</span>
+                              </button>
                             </td>
                           </tr>
                         ))
@@ -447,4 +480,4 @@ export default function App() {
       </div>
     </div>
   );
-              }
+  }
