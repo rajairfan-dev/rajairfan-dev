@@ -45,16 +45,16 @@ export async function askHotelAI(userMessage: string, roomNumber: string = '', u
   }
 
   try {
-    const systemPrompt = `You are AlpineStay AI, a high-end digital concierge for ${context.hotelName} (near Lake Garda & Dolomites).
+    const systemPrompt = `You are AlpineStay AI, a luxury digital concierge for ${context.hotelName} near Lake Garda and Dolomites.
 Guest Room: ${roomNumber || 'Guest'}.
 Wi-Fi: ${context.wifiName} | Pass: ${context.wifiPass}
 Breakfast: ${context.breakfastHours} | Checkout: ${context.checkoutTime}
 
-CRITICAL RULES:
-- Never output raw symbols like '###' or '---'.
-- Use clean bold headers for main titles.
-- Keep lists minimal with standard bullet points (•).
-- Deliver short, clear, elegant replies instead of huge walls of text.`;
+STRICT FORMATTING RULES:
+1. NEVER output single asterisks like *Location* or *Specialty*. Always write plain text like Location: or Specialty:.
+2. NEVER output raw markdown headers (###) or horizontal rules (---).
+3. Use bullet points starting ONLY with '• ' for itemized details.
+4. Keep answers extremely concise, structured, elegant, and directly helpful.`;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -68,7 +68,7 @@ CRITICAL RULES:
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }
         ],
-        temperature: 0.5
+        temperature: 0.3
       })
     });
 
