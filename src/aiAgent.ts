@@ -13,7 +13,7 @@ export async function getHotelContext(userLang: string = 'en') {
         hotelName: 'AlpineStay',
         wifiName: 'AlpineStay_Guest',
         wifiPass: 'alpine2026',
-        breakfastHours: '7:00 AM - 10:30 AM',
+        breakfastHours: '7:00 AM – 10:30 AM',
         checkoutTime: '11:00 AM'
       };
     }
@@ -23,14 +23,14 @@ export async function getHotelContext(userLang: string = 'en') {
       wifiName: data.wifi_name || 'AlpineStay_Guest',
       wifiPass: data.wifi_password || 'alpine2026',
       checkoutTime: data.checkout_time || '11:00 AM',
-      breakfastHours: data.breakfast_hours || '7:00 AM - 10:30 AM'
+      breakfastHours: data.breakfast_hours || '7:00 AM – 10:30 AM'
     };
   } catch (err) {
     return {
       hotelName: 'AlpineStay',
       wifiName: 'AlpineStay_Guest',
       wifiPass: 'alpine2026',
-      breakfastHours: '7:00 AM - 10:30 AM',
+      breakfastHours: '7:00 AM – 10:30 AM',
       checkoutTime: '11:00 AM'
     };
   }
@@ -45,18 +45,16 @@ export async function askHotelAI(userMessage: string, roomNumber: string = '', u
   }
 
   try {
-    const systemPrompt = `You are AlpineStay AI, the dedicated virtual hotel concierge for ${context.hotelName} located in Trentino-Alto Adige near Lake Garda.
-Guest Room: ${roomNumber || 'Not specified'}.
-Wi-Fi: ${context.wifiName} (Password: ${context.wifiPass})
-Breakfast: ${context.breakfastHours}
-Checkout: ${context.checkoutTime}
+    const systemPrompt = `You are AlpineStay AI, a high-end digital concierge for ${context.hotelName} (near Lake Garda & Dolomites).
+Guest Room: ${roomNumber || 'Guest'}.
+Wi-Fi: ${context.wifiName} | Pass: ${context.wifiPass}
+Breakfast: ${context.breakfastHours} | Checkout: ${context.checkoutTime}
 
-Formatting & Persona Instructions:
-1. Always adopt a professional, high-end luxury hotel concierge persona.
-2. Structure answers using clear bold titles, sections, and indented bullet points (using '•' or '-').
-3. When asked about local attractions, always provide rich regional recommendations (e.g., Dolomites, Lake Garda spots like Sirmione, Limone sul Garda, Malcesine, Riva del Garda, Trento, Bolzano).
-4. When asked about capabilities or languages, format them cleanly under bulleted sections.
-5. Provide helpful, structured, and informative replies without telling guests to check elsewhere.`;
+CRITICAL RULES:
+- Never output raw symbols like '###' or '---'.
+- Use clean bold headers for main titles.
+- Keep lists minimal with standard bullet points (•).
+- Deliver short, clear, elegant replies instead of huge walls of text.`;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -70,20 +68,18 @@ Formatting & Persona Instructions:
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }
         ],
-        temperature: 0.7
+        temperature: 0.5
       })
     });
 
     const data = await response.json();
 
     if (data.error) {
-      console.error("GROQ API Error Object:", data.error);
       return `Groq API Error: ${data.error.message || "Invalid Request"}`;
     }
 
-    return data.choices?.[0]?.message?.content || "I am unable to generate a response right now.";
+    return data.choices?.[0]?.message?.content || "I am unable to assist at the moment.";
   } catch (error: any) {
-    console.error("GROQ Connection Error:", error);
-    return `Network Error: ${error.message || "Failed to reach Groq server"}`;
+    return `Network Error: ${error.message || "Failed to reach server"}`;
   }
 }
