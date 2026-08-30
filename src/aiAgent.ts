@@ -41,11 +41,11 @@ export async function askHotelAI(userMessage: string, roomNumber: string = '', u
   const apiKey = import.meta.env.VITE_GROQ_API_KEY;
 
   if (!apiKey) {
-    return "Error: VITE_GROQ_API_KEY is not defined in environment variables.";
+    return "Error: VITE_GROQ_API_KEY missing in Vercel settings.";
   }
 
   try {
-    const systemPrompt = `You are an AI Concierge for ${context.hotelName}. Guest Room: ${roomNumber || 'None'}. Wi-Fi: ${context.wifiName}, Pass: ${context.wifiPass}, Breakfast: ${context.breakfastHours}, Checkout: ${context.checkoutTime}. Answer guest queries politely and concisely.`;
+    const systemPrompt = `You are a helpful AI Concierge for ${context.hotelName}. Guest Room: ${roomNumber || 'None'}. Wi-Fi: ${context.wifiName}, Pass: ${context.wifiPass}, Breakfast: ${context.breakfastHours}, Checkout: ${context.checkoutTime}. Answer naturally and concisely.`;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -54,7 +54,7 @@ export async function askHotelAI(userMessage: string, roomNumber: string = '', u
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: "qwen/qwen3.8-27b",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }
