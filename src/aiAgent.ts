@@ -41,29 +41,20 @@ export async function askHotelAI(userMessage: string, roomNumber: string = '', u
   const apiKey = import.meta.env.VITE_GROQ_API_KEY;
 
   if (!apiKey) {
-    return "GROQ API Key missing in environment settings.";
+    return "Error: VITE_GROQ_API_KEY is not defined in environment variables.";
   }
 
-  // Live GROQ Llama-3 AI Call
   try {
-    const systemPrompt = `You are a helpful, smart AI Concierge for "${context.hotelName}". 
-Guest Room Number: ${roomNumber || 'Not specified'}.
-Hotel Details:
-- Wi-Fi Network: ${context.wifiName}
-- Wi-Fi Password: ${context.wifiPass}
-- Breakfast Timings: ${context.breakfastHours}
-- Check-out Time: ${context.checkoutTime}
-
-Answer any guest question naturally, politely, and intelligently. Use bold text formatting for key information.`;
+    const systemPrompt = `You are an AI Concierge for ${context.hotelName}. Guest Room: ${roomNumber || 'None'}. Wi-Fi: ${context.wifiName}, Pass: ${context.wifiPass}, Breakfast: ${context.breakfastHours}, Checkout: ${context.checkoutTime}. Answer guest queries politely and concisely.`;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${apiKey.trim()}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "llama-3.1-8b-instant",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }
@@ -73,9 +64,15 @@ Answer any guest question naturally, politely, and intelligently. Use bold text 
     });
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || "I apologize, I couldn't process that request right now.";
-  } catch (error) {
-    console.error("GROQ API Error:", error);
-    return "Sorry, I am having trouble connecting to my AI brain. Please try again in a moment.";
+
+    if (data.error) {
+      console.error("GROQ API Error Object:", data.error);
+      return `Groq API Error: ${data.error.message || "Invalid Request"}`;
+    }
+
+    return data.choices?.[0]?.message?.content || "I am unable to generate a response right now.";
+  } catch (error: any) {
+    console.error("GROQ Connection Error:", error);
+    return `Network Error: ${error.message || "Failed to reach Groq server"}`;
   }
 }
