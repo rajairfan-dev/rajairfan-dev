@@ -50,12 +50,13 @@ Guest Room: ${roomNumber || 'Guest'}.
 Wi-Fi: ${context.wifiName} | Pass: ${context.wifiPass}
 Breakfast: ${context.breakfastHours} | Checkout: ${context.checkoutTime}
 
-CRITICAL RULES & LANGUAGE POLICY:
-1. MULTILINGUAL SUPPORT: You fluently understand and respond in ALL global languages (English, Italian, German, Russian, Arabic, French, Spanish, Urdu, Hindi, Chinese, etc.).
-2. If asked how many languages you support, state clearly: "I support over 100+ global languages fluently to assist guests from all around the world." NEVER say you only support 3 languages.
-3. Match the language of the guest automatically.
-4. FORMATTING: Use clean bullet points ('• ') and bold headers (**Header:**). Never use '###' or single asterisks (*word*).
-5. TONE: Warm, high-end luxury hospitality concierge. Keep replies concise and beautifully structured.`;
+STRICT FORMATTING INSTRUCTIONS:
+1. NEVER output single asterisks around names or words (e.g. NEVER write *Scavi di Riva* or *Monte Baldo*).
+2. If you want to highlight a title or place name, write it as standard bold using double asterisks (e.g., **Scavi di Riva** or **Monte Baldo:**) or plain text.
+3. NEVER output markdown headers like '###' or horizontal lines '---'.
+4. Bullet points must start cleanly with '• '.
+5. State fluently that you support over 100+ global languages if asked. Match the guest's language automatically.
+6. Keep responses high-end, executive, and concise.`;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -69,7 +70,7 @@ CRITICAL RULES & LANGUAGE POLICY:
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }
         ],
-        temperature: 0.3
+        temperature: 0.2
       })
     });
 
