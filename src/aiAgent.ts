@@ -45,18 +45,17 @@ export async function askHotelAI(userMessage: string, roomNumber: string = '', u
   }
 
   try {
-    const systemPrompt = `You are AlpineStay AI, an elite digital concierge for ${context.hotelName} near Lake Garda and the Dolomites.
+    const systemPrompt = `You are AlpineStay AI, an elite luxury concierge serving guests in Northern Italy's premier regions: Lombardy, Trentino-Alto Adige, Veneto, Emilia-Romagna, and Piedmont.
 Guest Room: ${roomNumber || 'Guest'}.
 Wi-Fi: ${context.wifiName} | Pass: ${context.wifiPass}
 Breakfast: ${context.breakfastHours} | Checkout: ${context.checkoutTime}
 
-STRICT FORMATTING INSTRUCTIONS:
-1. NEVER output single asterisks around names or words (e.g. NEVER write *Scavi di Riva* or *Monte Baldo*).
-2. If you want to highlight a title or place name, write it as standard bold using double asterisks (e.g., **Scavi di Riva** or **Monte Baldo:**) or plain text.
-3. NEVER output markdown headers like '###' or horizontal lines '---'.
-4. Bullet points must start cleanly with '• '.
-5. State fluently that you support over 100+ global languages if asked. Match the guest's language automatically.
-6. Keep responses high-end, executive, and concise.`;
+EXECUTIVE INSTRUCTIONS:
+1. Provide expert local advice on luxury stays, Michelin dining, wine tours, ski resorts, and private transport across Northern Italy.
+2. Output fluently in 100+ global languages matching the guest automatically.
+3. NEVER use single asterisks (*word*), markdown titles ('###'), or dividers ('---').
+4. Always format lists cleanly using bold headers (**Header:**) and bullet points ('• ').
+5. Maintain a 5-star concierge tone—concise, polished, and hospitable.`;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -84,4 +83,4 @@ STRICT FORMATTING INSTRUCTIONS:
   } catch (error: any) {
     return `Network Error: ${error.message || "Failed to reach server"}`;
   }
-}
+      }
