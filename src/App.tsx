@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Users, KeyRound, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle, Search } from 'lucide-react';
+import { LayoutDashboard, Users, KeyRound, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle, Search, Bell } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI } from './aiAgent';
 import Settings from './Settings';
+import Login from './Login';
 
 interface Message {
   id: string;
@@ -11,13 +12,16 @@ interface Message {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'guests' | 'ai' | 'settings'>('guests');
+  const [session, setSession] = useState<any>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'guests' | 'requests' | 'ai' | 'settings'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Dashboard / Hotel Management States
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
   const [guests, setGuests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -43,8 +47,25 @@ export default function App() {
   ];
 
   useEffect(() => {
-    fetchGuests();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthChecking(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setAuthChecking(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (session) {
+      fetchGuests();
+      fetchRequests();
+    }
+  }, [session]);
 
   useEffect(() => {
     if (activeTab === 'ai') {
@@ -66,6 +87,20 @@ export default function App() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchRequests() {
+    try {
+      const { data, error } = await supabase
+        .from('guest_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) console.error('Error fetching requests:', error);
+      else setRequests(data || []);
+    } catch (err) {
+      console.error(err);
     }
   }
 
@@ -109,6 +144,20 @@ export default function App() {
     }
   }
 
+  async function handleUpdateReqStatus(id: string, newStatus: string) {
+    try {
+      const { error } = await supabase
+        .from('guest_requests')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) console.error(error);
+      else fetchRequests();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   const handleSendAIChat = async (textToSend?: string) => {
     const query = textToSend || chatInput;
     if (!query.trim() || aiLoading) return;
@@ -129,6 +178,22 @@ export default function App() {
       setAiLoading(false);
     }
   };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
+        <Sparkles className="w-8 h-8 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login onLoginSuccess={() => fetchGuests()} />;
+  }
 
   const filteredGuests = guests.filter(
     (g) =>
@@ -195,6 +260,18 @@ export default function App() {
             </button>
 
             <button
+              onClick={() => { setActiveTab('requests'); setIsSidebarOpen(false); }}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition ${
+                activeTab === 'requests'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <Bell className="w-5 h-5" />
+              <span>Requests ({requests.filter(r => r.status === 'pending').length})</span>
+            </button>
+
+            <button
               onClick={() => { setActiveTab('ai'); setIsSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition ${
                 activeTab === 'ai'
@@ -218,6 +295,24 @@ export default function App() {
               <span>Settings</span>
             </button>
           </nav>
+        </div>
+
+        <div className="p-4 border-t border-slate-800 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold">
+              A
+            </div>
+            <div className="truncate max-w-[120px]">
+              <p className="text-xs font-medium truncate">{session.user.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            title="Log Out"
+            className="p-1.5 text-slate-400 hover:text-rose-400 transition rounded-lg hover:bg-slate-800"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </aside>
 
@@ -250,22 +345,24 @@ export default function App() {
                 </div>
 
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                  <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
+                    <Bell className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 font-medium">Pending Requests</p>
+                    <h3 className="text-2xl font-bold text-amber-600">
+                      {requests.filter(r => r.status === 'pending').length}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
                   <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
                     <CheckCircle className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 font-medium">System Status</p>
-                    <h3 className="text-xl font-bold text-emerald-600">Active & Syncing</h3>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
-                  <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
-                    <MessageSquare className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 font-medium">AI Concierge</p>
-                    <h3 className="text-xl font-bold text-purple-600">100+ Languages</h3>
+                    <h3 className="text-xl font-bold text-emerald-600">Secured & Online</h3>
                   </div>
                 </div>
               </div>
@@ -361,6 +458,74 @@ export default function App() {
                                 <LogOut className="w-3.5 h-3.5" />
                                 <span>Check Out</span>
                               </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'requests' && (
+            <div className="p-6">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-slate-200 flex justify-between items-center">
+                  <h3 className="font-bold text-slate-800">Guest Service Requests</h3>
+                  <button onClick={fetchRequests} className="text-xs text-indigo-600 hover:underline">
+                    Refresh
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-600">
+                    <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                      <tr>
+                        <th className="p-4">Room #</th>
+                        <th className="p-4">Request</th>
+                        <th className="p-4">Time</th>
+                        <th className="p-4">Status</th>
+                        <th className="p-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {requests.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="p-6 text-center text-slate-400">
+                            No requests received yet.
+                          </td>
+                        </tr>
+                      ) : (
+                        requests.map((req) => (
+                          <tr key={req.id} className="hover:bg-slate-50">
+                            <td className="p-4 font-semibold text-slate-800">Room {req.room_number}</td>
+                            <td className="p-4">{req.request_text}</td>
+                            <td className="p-4 text-xs text-slate-400">
+                              {new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td className="p-4">
+                              <span
+                                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                  req.status === 'completed'
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : 'bg-amber-50 text-amber-700'
+                                }`}
+                              >
+                                {req.status}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right">
+                              {req.status === 'pending' ? (
+                                <button
+                                  onClick={() => handleUpdateReqStatus(req.id, 'completed')}
+                                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition"
+                                >
+                                  Mark Completed
+                                </button>
+                              ) : (
+                                <span className="text-xs text-slate-400">Done</span>
+                              )}
                             </td>
                           </tr>
                         ))
@@ -477,4 +642,4 @@ export default function App() {
       </div>
     </div>
   );
-    }
+}
