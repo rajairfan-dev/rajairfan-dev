@@ -8,6 +8,11 @@ export interface HotelContext {
   checkoutTime: string;
 }
 
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
 const DEFAULT_CONTEXT: HotelContext = {
   hotelName: 'AlpineStay',
   wifiName: 'AlpineStay_Guest',
@@ -41,6 +46,7 @@ export async function getHotelContext(userLang: string = 'en'): Promise<HotelCon
 export async function askHotelAI(
   userMessage: string, 
   roomNumber: string = '', 
+  historyMessages: ChatMessage[] = [],
   userLang: string = 'en'
 ): Promise<string> {
   const context = await getHotelContext(userLang);
@@ -60,12 +66,17 @@ HOTEL DETAILS:
 - Breakfast Hours: ${context.breakfastHours}
 - Checkout Time: ${context.checkoutTime}
 
-RESPONSE RULES:
-1. TONE: Ultra-professional, warm, sophisticated, and bespoke 5-star hotel concierge.
-2. GREETING & HOTEL INFO: Only include Wi-Fi & Checkout details on initial greetings (e.g. "hi", "hello", "welcome") or when explicitly requested by the guest. Do NOT inject Wi-Fi details into luxury itineraries or tour recommendations.
-3. FORMATTING RULES: Use plain, clean bullet points (•) for lists. DO NOT use asterisks like '**' or '*' anywhere in your response. Do NOT use markdown headings like '###' or dividers like '---'. Ensure text renders clean without formatting markup.
-4. TRIP RECOMMENDATIONS: Present multi-day itineraries elegantly using clear line breaks for Day, Morning, Afternoon, and Evening. Focus on Michelin dining, private transfers, and luxury experiences.
-5. LANGUAGE: Seamlessly respond in the guest's language (${userLang}).`;
+CRITICAL RULES:
+1. CONTEXT MEMORY: Always remember previous messages in the conversation history. When guests ask follow-up questions (e.g., "give me the website link", "what is their menu?"), refer back to the exact places or restaurants mentioned in recent context.
+2. ACCURATE INFORMATION & NO FAKE LINKS: Never hallucinate or invent fake website URLs (e.g., www.alpinestay.com/guest-dining). If you do not have the verified official website URL for a local restaurant, provide their exact name, address/locality, or suggest searching them on Google/TripAdvisor instead of giving non-existent links.
+3. TONE & FORMAT: Ultra-professional, warm, sophisticated 5-star concierge. Use clean bullet points (•) for lists. Ensure text is structured, direct, and helpful. Do not inject hotel Wi-Fi details into specific dining/tour answers unless asked.
+4. LANGUAGE: Respond seamlessly in the guest's language (${userLang}).`;
+
+    const payloadMessages: ChatMessage[] = [
+      { role: "system", content: systemPrompt },
+      ...historyMessages,
+      { role: "user", content: roomNumber ? `[Guest Room ${roomNumber}]: ${userMessage}` : userMessage }
+    ];
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -75,11 +86,8 @@ RESPONSE RULES:
       },
       body: JSON.stringify({
         model: "openai/gpt-oss-20b",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage }
-        ],
-        temperature: 0.2
+        messages: payloadMessages,
+        temperature: 0.3
       })
     });
 
