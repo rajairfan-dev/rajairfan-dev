@@ -15,7 +15,8 @@ import {
   Bell, 
   QrCode, 
   Printer,
-  Download
+  Download,
+  RotateCw
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI, ChatMessage } from './aiAgent';
@@ -100,7 +101,8 @@ export default function App() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [requests, setRequests] = useState<GuestRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [refreshingRequests, setRefreshingRequests] = useState(false);
 
   // Modal QR State
   const [selectedQRRoom, setSelectedQRRoom] = useState<string | null>(null);
@@ -207,6 +209,7 @@ export default function App() {
 
   async function fetchRequests() {
     try {
+      setRefreshingRequests(true);
       const { data, error } = await supabase
         .from('guest_requests')
         .select('*')
@@ -216,6 +219,8 @@ export default function App() {
       else setRequests(data || []);
     } catch (err) {
       console.error(err);
+    } finally {
+      setRefreshingRequests(false);
     }
   }
 
@@ -715,14 +720,15 @@ export default function App() {
                     </div>
                     <button
                       onClick={fetchGuests}
-                      className="text-xs text-indigo-600 hover:underline font-medium whitespace-nowrap"
+                      disabled={loading}
+                      className="text-xs text-indigo-600 hover:underline font-medium whitespace-nowrap disabled:opacity-50"
                     >
                       Refresh
                     </button>
                   </div>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-slate-600">
+                  <table className="w-full text-left text-sm text-slate-600 min-w-[500px]">
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                       <tr>
                         <th className="p-4">Guest Name</th>
@@ -777,23 +783,29 @@ export default function App() {
           )}
 
           {activeTab === 'requests' && (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-200 flex justify-between items-center">
-                  <h3 className="font-bold text-slate-800">Guest Service Requests</h3>
-                  <button onClick={fetchRequests} className="text-xs text-indigo-600 hover:underline">
-                    Refresh
+                <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                  <h3 className="font-bold text-slate-800 text-sm sm:text-base">Guest Service Requests</h3>
+                  <button 
+                    onClick={fetchRequests} 
+                    disabled={refreshingRequests}
+                    className="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition flex items-center space-x-1.5 border border-indigo-200/60 active:scale-95 disabled:opacity-50"
+                  >
+                    <RotateCw className={`w-3.5 h-3.5 ${refreshingRequests ? 'animate-spin' : ''}`} />
+                    <span>Refresh</span>
                   </button>
                 </div>
+
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-slate-600">
+                  <table className="w-full text-left text-xs sm:text-sm text-slate-600 min-w-[550px]">
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                       <tr>
-                        <th className="p-4">Room #</th>
-                        <th className="p-4">Request</th>
-                        <th className="p-4">Time</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4 text-right">Action</th>
+                        <th className="p-3.5 pl-4 w-28">Room #</th>
+                        <th className="p-3.5">Request</th>
+                        <th className="p-3.5 w-24">Time</th>
+                        <th className="p-3.5 w-28">Status</th>
+                        <th className="p-3.5 text-right pr-4 w-24">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -805,33 +817,37 @@ export default function App() {
                         </tr>
                       ) : (
                         requests.map((req) => (
-                          <tr key={req.id} className="hover:bg-slate-50">
-                            <td className="p-4 font-semibold text-slate-800">Room {req.room_number}</td>
-                            <td className="p-4">{req.request_text}</td>
-                            <td className="p-4 text-xs text-slate-400">
+                          <tr key={req.id} className="hover:bg-slate-50/80 transition">
+                            <td className="p-3.5 pl-4 font-bold text-slate-800 whitespace-nowrap">
+                              Room {req.room_number}
+                            </td>
+                            <td className="p-3.5 min-w-[180px] max-w-[280px] break-words">
+                              {req.request_text}
+                            </td>
+                            <td className="p-3.5 text-[11px] sm:text-xs text-slate-400 whitespace-nowrap">
                               {new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </td>
-                            <td className="p-4">
+                            <td className="p-3.5 whitespace-nowrap">
                               <span
-                                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${
                                   req.status === 'completed'
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : 'bg-amber-50 text-amber-700'
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                                    : 'bg-amber-50 text-amber-700 border border-amber-200/60'
                                 }`}
                               >
                                 {req.status}
                               </span>
                             </td>
-                            <td className="p-4 text-right">
+                            <td className="p-3.5 text-right pr-4 whitespace-nowrap">
                               {req.status === 'pending' ? (
                                 <button
                                   onClick={() => handleUpdateReqStatus(req.id, 'completed')}
-                                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition"
+                                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold shadow-sm transition"
                                 >
-                                  Mark Completed
+                                  Done
                                 </button>
                               ) : (
-                                <span className="text-xs text-slate-400">Done</span>
+                                <span className="text-xs text-slate-400 font-medium">Completed</span>
                               )}
                             </td>
                           </tr>
@@ -953,4 +969,4 @@ export default function App() {
       </div>
     </div>
   );
-    }
+}
