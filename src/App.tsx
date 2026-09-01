@@ -101,7 +101,7 @@ export default function App() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [requests, setRequests] = useState<GuestRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loadingGuests, setLoadingGuests] = useState(false);
   const [refreshingRequests, setRefreshingRequests] = useState(false);
 
   // Modal QR State
@@ -128,7 +128,7 @@ export default function App() {
     { label: '🍝 Michelin Dining', query: 'What are the top Michelin-starred restaurants near Lake Garda?' }
   ];
 
-  // Detect URL query room (e.g., alpinestay-saas.vercel.app?room=104)
+  // Detect URL query room
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomFromUrl = urlParams.get('room');
@@ -192,7 +192,7 @@ export default function App() {
 
   async function fetchGuests() {
     try {
-      setLoading(true);
+      setLoadingGuests(true);
       const { data, error } = await supabase
         .from('guests')
         .select('*')
@@ -202,8 +202,8 @@ export default function App() {
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
+    } fontinally {
+      setLoadingGuests(false);
     }
   }
 
@@ -332,7 +332,6 @@ export default function App() {
     }
   };
 
-  // Render Guest Concierge Fullscreen if scanned via QR Code
   if (isGuestMode) {
     return (
       <div className="flex flex-col h-screen bg-slate-100 font-sans">
@@ -703,38 +702,39 @@ export default function App() {
           )}
 
           {activeTab === 'guests' && (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h3 className="font-bold text-slate-800">Checked-In Guests</h3>
-                  <div className="flex items-center space-x-3">
-                    <div className="relative">
+                <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h3 className="font-bold text-slate-800 text-base">Checked-In Guests</h3>
+                  <div className="flex items-center space-x-2">
+                    <div className="relative flex-1 sm:w-64">
                       <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
                         placeholder="Search name or room..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 pr-4 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-64"
+                        className="pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
                       />
                     </div>
                     <button
                       onClick={fetchGuests}
-                      disabled={loading}
-                      className="text-xs text-indigo-600 hover:underline font-medium whitespace-nowrap disabled:opacity-50"
+                      disabled={loadingGuests}
+                      className="px-3.5 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition flex items-center space-x-1.5 border border-indigo-200 active:scale-95 disabled:opacity-50 shrink-0"
                     >
-                      Refresh
+                      <RotateCw className={`w-3.5 h-3.5 ${loadingGuests ? 'animate-spin' : ''}`} />
+                      <span>Refresh</span>
                     </button>
                   </div>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-slate-600 min-w-[500px]">
+                  <table className="w-full text-left text-xs sm:text-sm text-slate-600 min-w-[600px]">
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                       <tr>
-                        <th className="p-4">Guest Name</th>
-                        <th className="p-4">Room #</th>
-                        <th className="p-4">Check-In Date</th>
-                        <th className="p-4 text-right">Actions</th>
+                        <th className="p-3.5 pl-4">Guest Name</th>
+                        <th className="p-3.5">Room #</th>
+                        <th className="p-3.5">Check-In Date</th>
+                        <th className="p-3.5 text-right pr-4">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -746,27 +746,27 @@ export default function App() {
                         </tr>
                       ) : (
                         filteredGuests.map((g) => (
-                          <tr key={g.id} className="hover:bg-slate-50">
-                            <td className="p-4 font-medium text-slate-800">{g.name}</td>
-                            <td className="p-4">
-                              <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-semibold text-xs rounded-full">
+                          <tr key={g.id} className="hover:bg-slate-50 transition">
+                            <td className="p-3.5 pl-4 font-bold text-slate-800">{g.name}</td>
+                            <td className="p-3.5">
+                              <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/50">
                                 Room {g.room_number}
                               </span>
                             </td>
-                            <td className="p-4 text-xs text-slate-400">
+                            <td className="p-3.5 text-xs text-slate-400 whitespace-nowrap">
                               {new Date(g.created_at).toLocaleDateString()}
                             </td>
-                            <td className="p-4 text-right space-x-2">
+                            <td className="p-3.5 text-right pr-4 space-x-2 whitespace-nowrap">
                               <button
                                 onClick={() => setSelectedQRRoom(g.room_number.toString())}
-                                className="inline-flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition"
+                                className="inline-flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition border border-indigo-200/50"
                               >
                                 <QrCode className="w-3.5 h-3.5" />
                                 <span>QR Code</span>
                               </button>
                               <button
                                 onClick={() => handleCheckOutGuest(g.id)}
-                                className="inline-flex items-center space-x-1 px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-semibold transition"
+                                className="inline-flex items-center space-x-1 px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-semibold transition border border-rose-200/50"
                               >
                                 <LogOut className="w-3.5 h-3.5" />
                                 <span>Check Out</span>
@@ -790,7 +790,7 @@ export default function App() {
                   <button 
                     onClick={fetchRequests} 
                     disabled={refreshingRequests}
-                    className="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition flex items-center space-x-1.5 border border-indigo-200/60 active:scale-95 disabled:opacity-50"
+                    className="px-3.5 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition flex items-center space-x-1.5 border border-indigo-200 active:scale-95 disabled:opacity-50"
                   >
                     <RotateCw className={`w-3.5 h-3.5 ${refreshingRequests ? 'animate-spin' : ''}`} />
                     <span>Refresh</span>
@@ -798,14 +798,14 @@ export default function App() {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs sm:text-sm text-slate-600 min-w-[550px]">
+                  <table className="w-full text-left text-xs sm:text-sm text-slate-600 min-w-[650px]">
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                       <tr>
                         <th className="p-3.5 pl-4 w-28">Room #</th>
                         <th className="p-3.5">Request</th>
                         <th className="p-3.5 w-24">Time</th>
                         <th className="p-3.5 w-28">Status</th>
-                        <th className="p-3.5 text-right pr-4 w-24">Action</th>
+                        <th className="p-3.5 text-right pr-4 w-28">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -821,7 +821,7 @@ export default function App() {
                             <td className="p-3.5 pl-4 font-bold text-slate-800 whitespace-nowrap">
                               Room {req.room_number}
                             </td>
-                            <td className="p-3.5 min-w-[180px] max-w-[280px] break-words">
+                            <td className="p-3.5 min-w-[200px] break-words">
                               {req.request_text}
                             </td>
                             <td className="p-3.5 text-[11px] sm:text-xs text-slate-400 whitespace-nowrap">
