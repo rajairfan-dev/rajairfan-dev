@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Users, KeyRound, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle, Search, Bell, QrCode, Printer } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle, Search, Bell, QrCode, Printer } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI, ChatMessage } from './aiAgent';
 import Settings from './Settings';
 import Login from './Login';
+import Analytics from './Analytics';
 
 interface Message {
   id: string;
@@ -466,39 +467,8 @@ export default function App() {
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'dashboard' && (
             <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
-                  <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-                    <Users className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 font-medium">Active Guests</p>
-                    <h3 className="text-2xl font-bold text-slate-800">{guests.length}</h3>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
-                  <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-                    <Bell className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 font-medium">Pending Requests</p>
-                    <h3 className="text-2xl font-bold text-amber-600">
-                      {pendingCount}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
-                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                    <CheckCircle className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 font-medium">System Status</p>
-                    <h3 className="text-xl font-bold text-emerald-600">Secured & Online</h3>
-                  </div>
-                </div>
-              </div>
+              {/* Modular Analytics Component */}
+              <Analytics guestsCount={guests.length} requests={requests} />
 
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h3 className="text-base font-bold text-slate-800 mb-4">Quick Guest Check-In</h3>
@@ -764,12 +734,12 @@ export default function App() {
                   placeholder="Ask Wi-Fi pass, luxury tours, Michelin dining..."
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  className="flex-1 px-4 py-2.5 text-sm bg-slate-100 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800"
+                  className="flex-1 px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <button
                   type="submit"
                   disabled={aiLoading || !chatInput.trim()}
-                  className="p-2.5 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50 transition"
+                  className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -786,4 +756,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+      }
