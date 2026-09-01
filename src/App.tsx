@@ -11,6 +11,51 @@ interface Message {
   text: string;
 }
 
+// Custom Markdown Formatter Component to render raw markdown like **bold** & *italic* cleanly
+const FormattedText: React.FC<{ text: string }> = ({ text }) => {
+  const parseInlineMarkdown = (content: string) => {
+    // Regex splits text into bold (**...**) and italic (*...*) tokens
+    const parts = content.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return <em key={i} className="italic text-slate-700">{part.slice(1, -1)}</em>;
+      }
+      return part;
+    });
+  };
+
+  const lines = text.split('\n');
+
+  return (
+    <div className="space-y-1">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={idx} className="h-1" />;
+
+        if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
+          const content = trimmed.substring(1).trim();
+          return (
+            <div key={idx} className="flex items-start space-x-2 my-0.5">
+              <span className="text-indigo-600 font-bold select-none">•</span>
+              <span className="flex-1">{parseInlineMarkdown(content)}</span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={idx} className="leading-relaxed">
+            {parseInlineMarkdown(line)}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [authChecking, setAuthChecking] = useState(true);
@@ -570,13 +615,17 @@ export default function App() {
                       </div>
                     )}
                     <div
-                      className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                      className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl text-sm leading-relaxed ${
                         msg.sender === 'user'
-                          ? 'bg-indigo-600 text-white rounded-br-none'
+                          ? 'bg-indigo-600 text-white rounded-br-none whitespace-pre-wrap'
                           : 'bg-white text-slate-800 shadow-sm border border-slate-200 rounded-bl-none'
                       }`}
                     >
-                      {msg.text}
+                      {msg.sender === 'ai' ? (
+                        <FormattedText text={msg.text} />
+                      ) : (
+                        msg.text
+                      )}
                     </div>
                     {msg.sender === 'user' && (
                       <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white flex-shrink-0">
@@ -642,4 +691,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+    }
