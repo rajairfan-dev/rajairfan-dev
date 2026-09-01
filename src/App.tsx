@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LayoutDashboard, Users, KeyRound, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle, Search, Bell } from 'lucide-react';
 import { supabase } from './supabaseClient';
-import { askHotelAI } from './aiAgent';
+import { askHotelAI, ChatMessage } from './aiAgent';
 import Settings from './Settings';
 import Login from './Login';
 
@@ -213,7 +213,13 @@ export default function App() {
     setAiLoading(true);
 
     try {
-      const aiResponse = await askHotelAI(query, chatRoom);
+      // Map previous messages context to pass to AI memory
+      const historyForAI: ChatMessage[] = messages.slice(-6).map((m) => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text,
+      }));
+
+      const aiResponse = await askHotelAI(query, chatRoom, historyForAI);
       const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponse };
       setMessages((prev) => [...prev, aiMsg]);
     } catch (err) {
@@ -691,4 +697,4 @@ export default function App() {
       </div>
     </div>
   );
-    }
+}
