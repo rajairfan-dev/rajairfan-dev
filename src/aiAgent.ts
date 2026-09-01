@@ -43,6 +43,30 @@ export async function getHotelContext(userLang: string = 'en'): Promise<HotelCon
   }
 }
 
+// Helper to automatically log physical room requests into Supabase
+async function autoCreateServiceRequest(roomNumber: string, messageText: string) {
+  if (!roomNumber) return;
+  
+  const requestKeywords = ['towel', 'water', 'clean', 'pillow', 'blanket', 'soap', 'housekeeping', 'fix', 'toiletries', 'bring'];
+  const lowerMsg = messageText.toLowerCase();
+  
+  const isRequest = requestKeywords.some(keyword => lowerMsg.includes(keyword));
+  
+  if (isRequest) {
+    try {
+      await supabase.from('guest_requests').insert([
+        {
+          room_number: roomNumber,
+          request_text: messageText,
+          status: 'pending'
+        }
+      ]);
+    } catch (err) {
+      console.error('Error logging guest request:', err);
+    }
+  }
+}
+
 export async function askHotelAI(
   userMessage: string, 
   roomNumber: string = '', 
@@ -56,21 +80,25 @@ export async function askHotelAI(
     return "Configuration Alert: API Key missing in environment settings.";
   }
 
+  // Trigger background check for service requests
+  autoCreateServiceRequest(roomNumber, userMessage);
+
   try {
     const systemPrompt = `You are AlpineStay Concierge, an ultra-luxury 5-star digital assistant for ${context.hotelName} serving Northern Italy.
 
 HOTEL DETAILS:
-- Room: ${roomNumber || 'Guest'}
+- Current Guest Room: ${roomNumber || 'Not Specified'}
 - Wi-Fi Network: ${context.wifiName}
 - Wi-Fi Password: ${context.wifiPass}
 - Breakfast Hours: ${context.breakfastHours}
 - Checkout Time: ${context.checkoutTime}
 
 CRITICAL RULES:
-1. CONTEXT MEMORY: Always remember previous messages in the conversation history. When guests ask follow-up questions (e.g., "give me the website link", "what is their menu?"), refer back to the exact places or restaurants mentioned in recent context.
-2. ACCURATE INFORMATION & NO FAKE LINKS: Never hallucinate or invent fake website URLs (e.g., www.alpinestay.com/guest-dining). If you do not have the verified official website URL for a local restaurant, provide their exact name, address/locality, or suggest searching them on Google/TripAdvisor instead of giving non-existent links.
-3. TONE & FORMAT: Ultra-professional, warm, sophisticated 5-star concierge. Use clean bullet points (•) for lists. Ensure text is structured, direct, and helpful. Do not inject hotel Wi-Fi details into specific dining/tour answers unless asked.
-4. LANGUAGE: Respond seamlessly in the guest's language (${userLang}).`;
+1. SERVICE REQUEST ACKNOWLEDGEMENT: If the guest asks for physical items or services (e.g. extra towels, water, housekeeping, pillows), warmly confirm that you have notified the hotel front desk/staff for Room ${roomNumber || 'their room'}.
+2. CONTEXT MEMORY: Always remember previous messages in the conversation history to answer follow-ups correctly.
+3. ACCURATE INFORMATION: Never fabricate fake URLs. If you don't have exact verified links, provide names/locations or suggest searching Google/TripAdvisor.
+4. TONE & FORMAT: Ultra-professional, warm, bespoke 5-star concierge. Use clean bullet points (•) for lists.
+5. LANGUAGE: Respond in guest's language (${userLang}).`;
 
     const payloadMessages: ChatMessage[] = [
       { role: "system", content: systemPrompt },
@@ -101,4 +129,4 @@ CRITICAL RULES:
   } catch (error: any) {
     return `Connection Error: ${error.message || "Failed to reach server"}`;
   }
-}
+          }
