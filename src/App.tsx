@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Users, KeyRound, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle, Search, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, KeyRound, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle, Search, Bell, QrCode, Printer } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI, ChatMessage } from './aiAgent';
 import Settings from './Settings';
@@ -11,7 +11,6 @@ interface Message {
   text: string;
 }
 
-// Custom Markdown Formatter Component to render raw markdown cleanly
 const FormattedText: React.FC<{ text: string }> = ({ text }) => {
   const parseInlineMarkdown = (content: string) => {
     const parts = content.split(/(\*\*.*?\*\*|\*.*?\*)/g);
@@ -69,6 +68,9 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Modal QR State
+  const [selectedQRRoom, setSelectedQRRoom] = useState<string | null>(null);
+
   // AI Chat States
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -90,6 +92,16 @@ export default function App() {
     { label: '🍝 Michelin Dining', query: 'What are the top Michelin-starred restaurants near Lake Garda?' }
   ];
 
+  // Auto detect URL query room (e.g., app.vercel.app?room=104)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomFromUrl = urlParams.get('room');
+    if (roomFromUrl) {
+      setChatRoom(roomFromUrl);
+      setActiveTab('ai');
+    }
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -109,7 +121,6 @@ export default function App() {
       fetchGuests();
       fetchRequests();
 
-      // Realtime listener for new room requests
       const channel = supabase
         .channel('schema-db-changes')
         .on(
@@ -145,7 +156,7 @@ export default function App() {
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } finally {
+    } fontally {
       setLoading(false);
     }
   }
@@ -237,7 +248,6 @@ export default function App() {
       const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponse };
       setMessages((prev) => [...prev, aiMsg]);
       
-      // Refresh requests in background
       setTimeout(() => fetchRequests(), 1000);
     } catch (err) {
       const errorMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: "Sorry, I encountered an issue. Please try again." };
@@ -278,6 +288,52 @@ export default function App() {
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
+      )}
+
+      {/* QR Code Printable Modal */}
+      {selectedQRRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+            <button
+              onClick={() => setSelectedQRRoom(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center space-y-4">
+              <div>
+                <span className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full">
+                  AlpineStay Guest Concierge
+                </span>
+                <h3 className="text-xl font-bold text-slate-800 mt-2">Room {selectedQRRoom}</h3>
+                <p className="text-xs text-slate-500">Scan QR Code for instant AI Concierge</p>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl flex justify-center border border-slate-200">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                    `${window.location.origin}?room=${selectedQRRoom}`
+                  )}`}
+                  alt={`QR Code Room ${selectedQRRoom}`}
+                  className="w-44 h-44 rounded-lg shadow-sm"
+                />
+              </div>
+
+              <p className="text-[11px] text-slate-400 font-mono break-all">
+                {`${window.location.origin}?room=${selectedQRRoom}`}
+              </p>
+
+              <button
+                onClick={() => window.print()}
+                className="w-full flex items-center justify-center space-x-2 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print QR Stand</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <aside
@@ -505,7 +561,7 @@ export default function App() {
                         <th className="p-4">Guest Name</th>
                         <th className="p-4">Room #</th>
                         <th className="p-4">Check-In Date</th>
-                        <th className="p-4 text-right">Action</th>
+                        <th className="p-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -527,7 +583,14 @@ export default function App() {
                             <td className="p-4 text-xs text-slate-400">
                               {new Date(g.created_at).toLocaleDateString()}
                             </td>
-                            <td className="p-4 text-right">
+                            <td className="p-4 text-right space-x-2">
+                              <button
+                                onClick={() => setSelectedQRRoom(g.room_number.toString())}
+                                className="inline-flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition"
+                              >
+                                <QrCode className="w-3.5 h-3.5" />
+                                <span>QR Code</span>
+                              </button>
                               <button
                                 onClick={() => handleCheckOutGuest(g.id)}
                                 className="inline-flex items-center space-x-1 px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-semibold transition"
@@ -628,7 +691,7 @@ export default function App() {
                     placeholder="101"
                     value={chatRoom}
                     onChange={(e) => setChatRoom(e.target.value)}
-                    className="w-16 px-2 py-1 text-xs rounded bg-indigo-700 text-white placeholder-indigo-300 focus:outline-none"
+                    className="w-16 px-2 py-1 text-xs rounded bg-indigo-700 text-white placeholder-indigo-300 focus:outline-none font-semibold"
                   />
                 </div>
               </div>
@@ -723,4 +786,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+  }
