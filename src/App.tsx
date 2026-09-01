@@ -1,10 +1,42 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Users, MessageSquare, Settings as SettingsIcon, Menu, X, Send, Bot, User, Sparkles, LogOut, CheckCircle, Search, Bell, QrCode, Printer } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  Users, 
+  MessageSquare, 
+  Settings as SettingsIcon, 
+  Menu, 
+  X, 
+  Send, 
+  Bot, 
+  User, 
+  Sparkles, 
+  LogOut, 
+  Search, 
+  Bell, 
+  QrCode, 
+  Printer,
+  Download
+} from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI, ChatMessage } from './aiAgent';
 import Settings from './Settings';
 import Login from './Login';
 import Analytics from './Analytics';
+
+interface Guest {
+  id: string;
+  name: string;
+  room_number: string | number;
+  created_at: string;
+}
+
+interface GuestRequest {
+  id: string;
+  room_number: string | number;
+  request_text: string;
+  status: 'pending' | 'completed' | string;
+  created_at: string;
+}
 
 interface Message {
   id: string;
@@ -64,10 +96,10 @@ export default function App() {
   // Dashboard / Hotel Management States
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
-  const [guests, setGuests] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [requests, setRequests] = useState<GuestRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   // Modal QR State
   const [selectedQRRoom, setSelectedQRRoom] = useState<string | null>(null);
@@ -104,17 +136,26 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setAuthChecking(false);
+      if (isMounted) {
+        setSession(session);
+        setAuthChecking(false);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setAuthChecking(false);
+      if (isMounted) {
+        setSession(session);
+        setAuthChecking(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -178,12 +219,12 @@ export default function App() {
 
   async function handleAddGuest(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !room) return;
+    if (!name.trim() || !room.trim()) return;
 
     try {
       const { error } = await supabase
         .from('guests')
-        .insert([{ name, room_number: room }]);
+        .insert([{ name: name.trim(), room_number: room.trim() }]);
 
       if (error) {
         alert('Error adding guest: ' + error.message);
@@ -262,6 +303,26 @@ export default function App() {
     await supabase.auth.signOut();
   };
 
+  const handleDownloadQR = async (roomNum: string) => {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
+      `${window.location.origin}?room=${roomNum}`
+    )}`;
+    try {
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `AlpineStay_Room_${roomNum}_QR.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+      window.open(qrUrl, '_blank');
+    }
+  };
+
   if (authChecking) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
@@ -284,6 +345,33 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
+      {/* Print CSS to isolate the QR Stand card during print */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #printable-qr-modal, #printable-qr-modal * {
+            visibility: visible !important;
+          }
+          #printable-qr-modal {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: white !important;
+            box-shadow: none !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -294,43 +382,50 @@ export default function App() {
       {/* QR Code Printable Modal */}
       {selectedQRRoom && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+          <div id="printable-qr-modal" className="bg-white rounded-2xl max-w-sm w-full p-8 shadow-2xl relative text-center space-y-5 border border-slate-100">
             <button
               onClick={() => setSelectedQRRoom(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+              className="no-print absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="text-center space-y-4">
-              <div>
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full">
-                  AlpineStay Guest Concierge
-                </span>
-                <h3 className="text-xl font-bold text-slate-800 mt-2">Room {selectedQRRoom}</h3>
-                <p className="text-xs text-slate-500">Scan QR Code for instant AI Concierge</p>
-              </div>
+            <div>
+              <span className="px-3.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-extrabold rounded-full tracking-wide uppercase">
+                AlpineStay Concierge
+              </span>
+              <h3 className="text-2xl font-black text-slate-900 mt-3">Room {selectedQRRoom}</h3>
+              <p className="text-xs text-slate-500 font-medium mt-1">Scan for 24/7 Room Service & Concierge</p>
+            </div>
 
-              <div className="bg-slate-50 p-4 rounded-xl flex justify-center border border-slate-200">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                    `${window.location.origin}?room=${selectedQRRoom}`
-                  )}`}
-                  alt={`QR Code Room ${selectedQRRoom}`}
-                  className="w-44 h-44 rounded-lg shadow-sm"
-                />
-              </div>
+            <div className="bg-slate-50 p-5 rounded-2xl flex justify-center border border-slate-200/80 shadow-inner">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+                  `${window.location.origin}?room=${selectedQRRoom}`
+                )}`}
+                alt={`QR Code Room ${selectedQRRoom}`}
+                className="w-48 h-48 rounded-xl shadow-md"
+              />
+            </div>
 
-              <p className="text-[11px] text-slate-400 font-mono break-all">
-                {`${window.location.origin}?room=${selectedQRRoom}`}
-              </p>
+            <p className="text-[11px] text-slate-400 font-mono break-all px-2">
+              {`${window.location.origin}?room=${selectedQRRoom}`}
+            </p>
 
+            <div className="no-print grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={() => handleDownloadQR(selectedQRRoom)}
+                className="flex items-center justify-center space-x-2 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition"
+              >
+                <Download className="w-4 h-4" />
+                <span>Save PNG</span>
+              </button>
               <button
                 onClick={() => window.print()}
-                className="w-full flex items-center justify-center space-x-2 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
+                className="flex items-center justify-center space-x-2 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition shadow-md shadow-indigo-200"
               >
                 <Printer className="w-4 h-4" />
-                <span>Print QR Stand</span>
+                <span>Print Stand</span>
               </button>
             </div>
           </div>
@@ -437,7 +532,7 @@ export default function App() {
               A
             </div>
             <div className="truncate max-w-[120px]">
-              <p className="text-xs font-medium truncate">{session.user.email}</p>
+              <p className="text-xs font-medium truncate">{session?.user?.email}</p>
             </div>
           </div>
           <button
@@ -467,7 +562,6 @@ export default function App() {
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'dashboard' && (
             <div className="p-6 space-y-6">
-              {/* Modular Analytics Component */}
               <Analytics guestsCount={guests.length} requests={requests} />
 
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -715,7 +809,7 @@ export default function App() {
                     key={idx}
                     onClick={() => handleSendAIChat(prompt.query)}
                     disabled={aiLoading}
-                    className="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 active:bg-indigo-100 whitespace-nowrap shadow-sm transition"
+                    className="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 active:bg-indigo-100 whitespace-nowrap shadow-sm transition disabled:opacity-50"
                   >
                     {prompt.label}
                   </button>
@@ -756,4 +850,4 @@ export default function App() {
       </div>
     </div>
   );
-      }
+    }
