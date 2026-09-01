@@ -16,7 +16,10 @@ import {
   QrCode, 
   Printer,
   Download,
-  RotateCw
+  RotateCw,
+  Trash2,
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI, ChatMessage } from './aiAgent';
@@ -269,6 +272,21 @@ export default function App() {
       const { error } = await supabase
         .from('guest_requests')
         .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) console.error(error);
+      else fetchRequests();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleDeleteRequest(id: string) {
+    if (!window.confirm('Is request ko delete karna chahte hain?')) return;
+    try {
+      const { error } = await supabase
+        .from('guest_requests')
+        .delete()
         .eq('id', id);
 
       if (error) console.error(error);
@@ -668,7 +686,7 @@ export default function App() {
 
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'dashboard' && (
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-6">
               <Analytics guestsCount={guests.length} requests={requests} />
 
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -727,8 +745,47 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs sm:text-sm text-slate-600 min-w-[600px]">
+
+                {/* Mobile Cards for Guests */}
+                <div className="block sm:hidden divide-y divide-slate-100">
+                  {filteredGuests.length === 0 ? (
+                    <p className="p-6 text-center text-xs text-slate-400">No matching guests found.</p>
+                  ) : (
+                    filteredGuests.map((g) => (
+                      <div key={g.id} className="p-4 space-y-3 bg-white">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-slate-900 text-sm">{g.name}</span>
+                          <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/50">
+                            Room {g.room_number}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          Check-in: {new Date(g.created_at).toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center justify-end space-x-2 pt-1">
+                          <button
+                            onClick={() => setSelectedQRRoom(g.room_number.toString())}
+                            className="inline-flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold border border-indigo-200/50"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>QR</span>
+                          </button>
+                          <button
+                            onClick={() => handleCheckOutGuest(g.id)}
+                            className="inline-flex items-center space-x-1 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-semibold border border-rose-200/50"
+                          >
+                            <LogOut className="w-3.5 h-3.5" />
+                            <span>Check Out</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Desktop Table for Guests */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-600">
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                       <tr>
                         <th className="p-3.5 pl-4">Guest Name</th>
@@ -786,7 +843,10 @@ export default function App() {
             <div className="p-4 sm:p-6">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
-                  <h3 className="font-bold text-slate-800 text-sm sm:text-base">Guest Service Requests</h3>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-base">Guest Service Requests</h3>
+                    <p className="text-xs text-slate-400">Manage pending and completed requests</p>
+                  </div>
                   <button 
                     onClick={fetchRequests} 
                     disabled={refreshingRequests}
@@ -797,15 +857,82 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs sm:text-sm text-slate-600 min-w-[650px]">
+                {/* Mobile Cards View (Screen Responsiveness Fix) */}
+                <div className="block sm:hidden divide-y divide-slate-100">
+                  {requests.length === 0 ? (
+                    <div className="p-6 text-center text-slate-400 text-xs">
+                      No requests received yet.
+                    </div>
+                  ) : (
+                    requests.map((req) => (
+                      <div key={req.id} className="p-4 space-y-2 bg-white">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/50">
+                            Room {req.room_number}
+                          </span>
+                          <div className="flex items-center space-x-1.5 text-xs text-slate-400">
+                            <Clock className="w-3 h-3" />
+                            <span>{new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-800 font-medium py-1">
+                          {req.request_text}
+                        </p>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-50">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                              req.status === 'completed'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200/60'
+                            }`}
+                          >
+                            {req.status}
+                          </span>
+
+                          <div className="flex items-center space-x-2">
+                            {req.status === 'pending' ? (
+                              <button
+                                onClick={() => handleUpdateReqStatus(req.id, 'completed')}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center space-x-1"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Done</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleUpdateReqStatus(req.id, 'pending')}
+                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium transition"
+                              >
+                                Re-open
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handleDeleteRequest(req.id)}
+                              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition border border-rose-200/50"
+                              title="Delete Request"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-600">
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                       <tr>
                         <th className="p-3.5 pl-4 w-28">Room #</th>
                         <th className="p-3.5">Request</th>
                         <th className="p-3.5 w-24">Time</th>
                         <th className="p-3.5 w-28">Status</th>
-                        <th className="p-3.5 text-right pr-4 w-28">Action</th>
+                        <th className="p-3.5 text-right pr-4 w-36">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -824,7 +951,7 @@ export default function App() {
                             <td className="p-3.5 min-w-[200px] break-words">
                               {req.request_text}
                             </td>
-                            <td className="p-3.5 text-[11px] sm:text-xs text-slate-400 whitespace-nowrap">
+                            <td className="p-3.5 text-xs text-slate-400 whitespace-nowrap">
                               {new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </td>
                             <td className="p-3.5 whitespace-nowrap">
@@ -838,7 +965,7 @@ export default function App() {
                                 {req.status}
                               </span>
                             </td>
-                            <td className="p-3.5 text-right pr-4 whitespace-nowrap">
+                            <td className="p-3.5 text-right pr-4 whitespace-nowrap space-x-2">
                               {req.status === 'pending' ? (
                                 <button
                                   onClick={() => handleUpdateReqStatus(req.id, 'completed')}
@@ -847,8 +974,20 @@ export default function App() {
                                   Done
                                 </button>
                               ) : (
-                                <span className="text-xs text-slate-400 font-medium">Completed</span>
+                                <button
+                                  onClick={() => handleUpdateReqStatus(req.id, 'pending')}
+                                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-xs font-medium transition"
+                                >
+                                  Re-open
+                                </button>
                               )}
+                              <button
+                                onClick={() => handleDeleteRequest(req.id)}
+                                className="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition border border-rose-200/50 inline-flex items-center align-middle"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </td>
                           </tr>
                         ))
