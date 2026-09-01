@@ -11,10 +11,9 @@ interface Message {
   text: string;
 }
 
-// Custom Markdown Formatter Component to render raw markdown like **bold** & *italic* cleanly
+// Custom Markdown Formatter Component to render raw markdown cleanly
 const FormattedText: React.FC<{ text: string }> = ({ text }) => {
   const parseInlineMarkdown = (content: string) => {
-    // Regex splits text into bold (**...**) and italic (*...*) tokens
     const parts = content.split(/(\*\*.*?\*\*|\*.*?\*)/g);
 
     return parts.map((part, i) => {
@@ -79,15 +78,15 @@ export default function App() {
     }
   ]);
   const [chatInput, setChatInput] = useState('');
-  const [chatRoom, setChatRoom] = useState('');
+  const [chatRoom, setChatRoom] = useState('101');
   const [aiLoading, setAiLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const quickPrompts = [
-    { label: '📶 Wi-Fi & Breakfast', query: 'What is the Wi-Fi password and breakfast timing?' },
+    { label: '🧹 Need Extra Towels', query: 'Please send 2 extra towels to my room.' },
+    { label: '💧 Water Bottles', query: 'Can housekeeping bring extra bottled water?' },
     { label: '🏎️ Lombardy & Modena', query: 'Suggest a luxury trip for Lombardy (Milan) and Emilia-Romagna (Ferrari/Modena).' },
     { label: '🏔️ Dolomites Skiing', query: 'Recommend premier ski resorts and luxury chalets in the Dolomites.' },
-    { label: '🍷 Barolo & Wine Tours', query: 'Recommend exclusive wine tasting tours in Piedmont and Veneto.' },
     { label: '🍝 Michelin Dining', query: 'What are the top Michelin-starred restaurants near Lake Garda?' }
   ];
 
@@ -109,6 +108,22 @@ export default function App() {
     if (session) {
       fetchGuests();
       fetchRequests();
+
+      // Realtime listener for new room requests
+      const channel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'guest_requests' },
+          () => {
+            fetchRequests();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [session]);
 
@@ -213,7 +228,6 @@ export default function App() {
     setAiLoading(true);
 
     try {
-      // Map previous messages context to pass to AI memory
       const historyForAI: ChatMessage[] = messages.slice(-6).map((m) => ({
         role: m.sender === 'user' ? 'user' : 'assistant',
         content: m.text,
@@ -222,6 +236,9 @@ export default function App() {
       const aiResponse = await askHotelAI(query, chatRoom, historyForAI);
       const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponse };
       setMessages((prev) => [...prev, aiMsg]);
+      
+      // Refresh requests in background
+      setTimeout(() => fetchRequests(), 1000);
     } catch (err) {
       const errorMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: "Sorry, I encountered an issue. Please try again." };
       setMessages((prev) => [...prev, errorMsg]);
@@ -251,6 +268,8 @@ export default function App() {
       g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       g.room_number.toString().toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
@@ -312,14 +331,21 @@ export default function App() {
 
             <button
               onClick={() => { setActiveTab('requests'); setIsSidebarOpen(false); }}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition ${
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition ${
                 activeTab === 'requests'
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
             >
-              <Bell className="w-5 h-5" />
-              <span>Requests ({requests.filter(r => r.status === 'pending').length})</span>
+              <div className="flex items-center space-x-3">
+                <Bell className="w-5 h-5" />
+                <span>Requests</span>
+              </div>
+              {pendingCount > 0 && (
+                <span className="px-2 py-0.5 text-xs bg-rose-500 text-white font-bold rounded-full animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -402,7 +428,7 @@ export default function App() {
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Pending Requests</p>
                     <h3 className="text-2xl font-bold text-amber-600">
-                      {requests.filter(r => r.status === 'pending').length}
+                      {pendingCount}
                     </h3>
                   </div>
                 </div>
@@ -599,7 +625,7 @@ export default function App() {
                   <span className="text-xs text-indigo-200">Room #</span>
                   <input
                     type="text"
-                    placeholder="Guest"
+                    placeholder="101"
                     value={chatRoom}
                     onChange={(e) => setChatRoom(e.target.value)}
                     className="w-16 px-2 py-1 text-xs rounded bg-indigo-700 text-white placeholder-indigo-300 focus:outline-none"
