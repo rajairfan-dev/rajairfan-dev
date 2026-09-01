@@ -156,7 +156,7 @@ export default function App() {
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } fontally {
+    } finally {
       setLoading(false);
     }
   }
@@ -786,4 +786,4 @@ export default function App() {
       </div>
     </div>
   );
-  }
+}
