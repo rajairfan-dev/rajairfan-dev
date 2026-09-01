@@ -202,7 +202,7 @@ export default function App() {
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } fontinally {
+    } finally {
       setLoadingGuests(false);
     }
   }
@@ -969,4 +969,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+    }
