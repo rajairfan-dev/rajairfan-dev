@@ -92,6 +92,7 @@ export default function App() {
   const [authChecking, setAuthChecking] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'guests' | 'requests' | 'ai' | 'settings'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isGuestMode, setIsGuestMode] = useState(false);
   
   // Dashboard / Hotel Management States
   const [name, setName] = useState('');
@@ -109,7 +110,7 @@ export default function App() {
     {
       id: '1',
       sender: 'ai',
-      text: "Welcome to AlpineStay! I am your 24/7 digital concierge for Northern Italy (Lombardy, Dolomites, Veneto, Emilia-Romagna & Piedmont).\n\n• Wi-Fi: AlpineStay_Guest | Pass: alpine2026\n• Breakfast: 7:00 AM – 10:30 AM\n• Checkout: 11:00 AM\n\nHow may I assist your luxury stay today?"
+      text: "Welcome to AlpineStay! I am your 24/7 digital concierge for Northern Italy.\n\n• Wi-Fi: AlpineStay_Guest | Pass: alpine2026\n• Breakfast: 7:00 AM – 10:30 AM\n• Checkout: 11:00 AM\n\nHow may I assist your luxury stay today?"
     }
   ]);
   const [chatInput, setChatInput] = useState('');
@@ -125,12 +126,13 @@ export default function App() {
     { label: '🍝 Michelin Dining', query: 'What are the top Michelin-starred restaurants near Lake Garda?' }
   ];
 
-  // Auto detect URL query room (e.g., app.vercel.app?room=104)
+  // Detect URL query room (e.g., alpinestay-saas.vercel.app?room=104)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomFromUrl = urlParams.get('room');
     if (roomFromUrl) {
       setChatRoom(roomFromUrl);
+      setIsGuestMode(true);
       setActiveTab('ai');
     }
   }, []);
@@ -290,7 +292,9 @@ export default function App() {
       const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponse };
       setMessages((prev) => [...prev, aiMsg]);
       
-      setTimeout(() => fetchRequests(), 1000);
+      if (session) {
+        setTimeout(() => fetchRequests(), 1000);
+      }
     } catch (err) {
       const errorMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: "Sorry, I encountered an issue. Please try again." };
       setMessages((prev) => [...prev, errorMsg]);
@@ -323,6 +327,107 @@ export default function App() {
     }
   };
 
+  // Render Guest Concierge Fullscreen if scanned via QR Code
+  if (isGuestMode) {
+    return (
+      <div className="flex flex-col h-screen bg-slate-100 font-sans">
+        <header className="bg-indigo-600 text-white px-5 py-3.5 flex justify-between items-center shadow-md">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="font-bold text-base leading-tight">AlpineStay Concierge</h1>
+              <p className="text-[11px] text-indigo-200">24/7 Room Service & AI Assistance</p>
+            </div>
+          </div>
+          <div className="bg-indigo-800/80 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
+            Room #{chatRoom}
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex items-start space-x-2 ${
+                msg.sender === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              {msg.sender === 'ai' && (
+                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white flex-shrink-0 shadow">
+                  <Bot className="w-5 h-5" />
+                </div>
+              )}
+              <div
+                className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl text-sm leading-relaxed ${
+                  msg.sender === 'user'
+                    ? 'bg-indigo-600 text-white rounded-br-none whitespace-pre-wrap shadow'
+                    : 'bg-white text-slate-800 shadow-sm border border-slate-200/80 rounded-bl-none'
+                }`}
+              >
+                {msg.sender === 'ai' ? (
+                  <FormattedText text={msg.text} />
+                ) : (
+                  msg.text
+                )}
+              </div>
+              {msg.sender === 'user' && (
+                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white flex-shrink-0 shadow">
+                  <User className="w-5 h-5" />
+                </div>
+              )}
+            </div>
+          ))}
+
+          {aiLoading && (
+            <div className="flex items-center space-x-2 text-slate-500 text-sm pl-2">
+              <Sparkles className="w-4 h-4 animate-spin text-indigo-600" />
+              <span>AlpineStay Concierge is replying...</span>
+            </div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 overflow-x-auto flex space-x-2">
+          {quickPrompts.map((prompt, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleSendAIChat(prompt.query)}
+              disabled={aiLoading}
+              className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-white text-indigo-600 border border-indigo-200/80 hover:bg-indigo-50 active:bg-indigo-100 whitespace-nowrap shadow-sm transition disabled:opacity-50"
+            >
+              {prompt.label}
+            </button>
+          ))}
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendAIChat();
+          }}
+          className="p-3 bg-white border-t border-slate-200 flex items-center space-x-2 shadow-lg"
+        >
+          <input
+            type="text"
+            placeholder="Ask Wi-Fi pass, towels, food..."
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            className="flex-1 px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button
+            type="submit"
+            disabled={aiLoading || !chatInput.trim()}
+            className="bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-700 transition disabled:opacity-50 shadow-md shadow-indigo-200"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   if (authChecking) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
@@ -345,7 +450,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
-      {/* Print CSS to isolate the QR Stand card during print */}
       <style>{`
         @media print {
           body * {
@@ -379,7 +483,6 @@ export default function App() {
         />
       )}
 
-      {/* QR Code Printable Modal */}
       {selectedQRRoom && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div id="printable-qr-modal" className="bg-white rounded-2xl max-w-sm w-full p-8 shadow-2xl relative text-center space-y-5 border border-slate-100">
