@@ -13,8 +13,13 @@ import {
   LogOut, 
   Search, 
   Bell, 
+  QrCode, 
+  Printer,
+  Download,
   RotateCw,
   Trash2,
+  CheckCircle2,
+  Clock,
   Globe,
   Upload,
   FileText
@@ -25,6 +30,7 @@ import Settings from './Settings';
 import Login from './Login';
 import Analytics from './Analytics';
 
+// --- MULTILINGUAL TRANSLATIONS (13 Languages) ---
 type Language = 'en' | 'de' | 'it' | 'nl' | 'fr' | 'es' | 'pl' | 'ru' | 'ar' | 'zh' | 'sv' | 'ja' | 'ko';
 
 const LANGUAGES: { code: Language; name: string; flag: string }[] = [
@@ -43,85 +49,266 @@ const LANGUAGES: { code: Language; name: string; flag: string }[] = [
   { code: 'ko', name: '한국어', flag: '🇰🇷' },
 ];
 
-// Fixed Type Definition here to prevent TypeScript compilation error
-const translations: Record<string, Record<string, string>> = {
+const translations: Record<Language, Record<string, string>> = {
   en: {
-    dashboard: "Dashboard", guests: "Guests List", requests: "Requests", ai: "AI Concierge", settings: "Settings",
-    checkInTitle: "Quick Guest Check-In", firstName: "First Name", surname: "Surname", email: "Email Address",
-    phone: "Phone Number", room: "Room Number", passport: "Upload Passport/ID", register: "Register Guest",
-    uploading: "Uploading...", refresh: "Refresh", done: "Done", reopen: "Re-open", delete: "Delete"
+    dashboard: "Dashboard",
+    guests: "Guests List",
+    requests: "Requests",
+    ai: "AI Concierge",
+    settings: "Settings",
+    checkInTitle: "Quick Guest Check-In",
+    firstName: "First Name",
+    surname: "Surname",
+    email: "Email Address",
+    phone: "Phone Number",
+    room: "Room Number",
+    passport: "Upload Passport/ID",
+    register: "Register Guest",
+    uploading: "Uploading...",
+    refresh: "Refresh",
+    done: "Done",
+    reopen: "Re-open",
+    delete: "Delete"
   },
   de: {
-    dashboard: "Dashboard", guests: "Gästeliste", requests: "Anfragen", ai: "KI Concierge", settings: "Einstellungen",
-    checkInTitle: "Schneller Gäste-Check-in", firstName: "Vorname", surname: "Nachname", email: "E-Mail-Adresse",
-    phone: "Telefonnummer", room: "Zimmernummer", passport: "Reisepass/Ausweis hochladen", register: "Gast registrieren",
-    uploading: "Wird hochgeladen...", refresh: "Aktualisieren", done: "Erledigt", reopen: "Wiederöffnen", delete: "Löschen"
+    dashboard: "Dashboard",
+    guests: "Gästeliste",
+    requests: "Anfragen",
+    ai: "KI Concierge",
+    settings: "Einstellungen",
+    checkInTitle: "Schneller Gäste-Check-in",
+    firstName: "Vorname",
+    surname: "Nachname",
+    email: "E-Mail-Adresse",
+    phone: "Telefonnummer",
+    room: "Zimmernummer",
+    passport: "Reisepass/Ausweis hochladen",
+    register: "Gast registrieren",
+    uploading: "Wird hochgeladen...",
+    refresh: "Aktualisieren",
+    done: "Erledigt",
+    reopen: "Wiederöffnen",
+    delete: "Löschen"
   },
   it: {
-    dashboard: "Dashboard", guests: "Lista Ospiti", requests: "Richieste", ai: "AI Concierge", settings: "Impostazioni",
-    checkInTitle: "Check-In Rapido Ospiti", firstName: "Nome", surname: "Cognome", email: "Indirizzo Email",
-    phone: "Numero di Telefono", room: "Numero di Camera", passport: "Carica Passaporto/ID", register: "Registra Ospite",
-    uploading: "Caricamento...", refresh: "Aggiorna", done: "Fatto", reopen: "Riapri", delete: "Elimina"
+    dashboard: "Dashboard",
+    guests: "Lista Ospiti",
+    requests: "Richieste",
+    ai: "AI Concierge",
+    settings: "Impostazioni",
+    checkInTitle: "Check-In Rapido Ospiti",
+    firstName: "Nome",
+    surname: "Cognome",
+    email: "Indirizzo Email",
+    phone: "Numero di Telefono",
+    room: "Numero di Camera",
+    passport: "Carica Passaporto/ID",
+    register: "Registra Ospite",
+    uploading: "Caricamento...",
+    refresh: "Aggiorna",
+    done: "Fatto",
+    reopen: "Riapri",
+    delete: "Elimina"
   },
   nl: {
-    dashboard: "Dashboard", guests: "Gastenlijst", requests: "Verzoeken", ai: "AI Concierge", settings: "Instellingen",
-    checkInTitle: "Snelle Gast Inchecken", firstName: "Voornaam", surname: "Achternaam", email: "E-mailadres",
-    phone: "Telefoonnummer", room: "Kamernummer", passport: "Paspoort/ID Uploaden", register: "Gast Registreren",
-    uploading: "Uploaden...", refresh: "Vernieuwen", done: "Klaar", reopen: "Heropenen", delete: "Verwijderen"
+    dashboard: "Dashboard",
+    guests: "Gastenlijst",
+    requests: "Verzoeken",
+    ai: "AI Concierge",
+    settings: "Instellingen",
+    checkInTitle: "Snelle Gast Inchecken",
+    firstName: "Voornaam",
+    surname: "Achternaam",
+    email: "E-mailadres",
+    phone: "Telefoonnummer",
+    room: "Kamernummer",
+    passport: "Paspoort/ID Uploaden",
+    register: "Gast Registreren",
+    uploading: "Uploaden...",
+    refresh: "Vernieuwen",
+    done: "Klaar",
+    reopen: "Heropenen",
+    delete: "Verwijderen"
   },
   fr: {
-    dashboard: "Tableau de bord", guests: "Liste des Clients", requests: "Demandes", ai: "Concierge IA", settings: "Paramètres",
-    checkInTitle: "Enregistrement Rapide", firstName: "Prénom", surname: "Nom", email: "Adresse Email",
-    phone: "Numéro de Téléphone", room: "Numéro de Chambre", passport: "Télécharger Passeport/PI", register: "Enregistrer le Client",
-    uploading: "Envoi...", refresh: "Actualiser", done: "Terminé", reopen: "Rouvrir", delete: "Supprimer"
+    dashboard: "Tableau de bord",
+    guests: "Liste des Clients",
+    requests: "Demandes",
+    ai: "Concierge IA",
+    settings: "Paramètres",
+    checkInTitle: "Enregistrement Rapide",
+    firstName: "Prénom",
+    surname: "Nom",
+    email: "Adresse Email",
+    phone: "Numéro de Téléphone",
+    room: "Numéro de Chambre",
+    passport: "Télécharger Passeport/PI",
+    register: "Enregistrer le Client",
+    uploading: "Envoi...",
+    refresh: "Actualiser",
+    done: "Terminé",
+    reopen: "Rouvrir",
+    delete: "Supprimer"
   },
   es: {
-    dashboard: "Panel de Control", guests: "Lista de Huéspedes", requests: "Solicitudes", ai: "Conserje IA", settings: "Configuración",
-    checkInTitle: "Registro Rápido de Huéspedes", firstName: "Nombre", surname: "Apellido", email: "Correo Electrónico",
-    phone: "Teléfono", room: "Número de Habitación", passport: "Subir Pasaporte/DNI", register: "Registrar Huésped",
-    uploading: "Subiendo...", refresh: "Actualizar", done: "Hecho", reopen: "Reabrir", delete: "Eliminar"
+    dashboard: "Panel de Control",
+    guests: "Lista de Huéspedes",
+    requests: "Solicitudes",
+    ai: "Conserje IA",
+    settings: "Configuración",
+    checkInTitle: "Registro Rápido de Huéspedes",
+    firstName: "Nombre",
+    surname: "Apellido",
+    email: "Correo Electrónico",
+    phone: "Teléfono",
+    room: "Número de Habitación",
+    passport: "Subir Pasaporte/DNI",
+    register: "Registrar Huésped",
+    uploading: "Subiendo...",
+    refresh: "Actualizar",
+    done: "Hecho",
+    reopen: "Reabrir",
+    delete: "Eliminar"
   },
   pl: {
-    dashboard: "Pulpit", guests: "Lista Gości", requests: "Prośby", ai: "Konjerż AI", settings: "Ustawienia",
-    checkInTitle: "Szybka Rejestracja Gościa", firstName: "Imię", surname: "Nazwisko", email: "Adres E-mail",
-    phone: "Numer Telefonu", room: "Numer Pokoju", passport: "Prześlij Paszport/Dowód", register: "Zarejestruj Gościa",
-    uploading: "Przesyłanie...", refresh: "Odśwież", done: "Gotowe", reopen: "Otwórz ponownie", delete: "Usuń"
+    dashboard: "Pulpit",
+    guests: "Lista Gości",
+    requests: "Prośby",
+    ai: "Konjerż AI",
+    settings: "Ustawienia",
+    checkInTitle: "Szybka Rejestracja Gościa",
+    firstName: "Imię",
+    surname: "Nazwisko",
+    email: "Adres E-mail",
+    phone: "Numer Telefonu",
+    room: "Numer Pokoju",
+    passport: "Prześlij Paszport/Dowód",
+    register: "Zarejestruj Gościa",
+    uploading: "Przesyłanie...",
+    refresh: "Odśwież",
+    done: "Gotowe",
+    reopen: "Otwórz ponownie",
+    delete: "Usuń"
   },
   ru: {
-    dashboard: "Панель управления", guests: "Список гостей", requests: "Запросы", ai: "ИИ Консьерж", settings: "Настройки",
-    checkInTitle: "Быстрая регистрация гостя", firstName: "Имя", surname: "Фамилия", email: "Эл. почта",
-    phone: "Номер телефона", room: "Номер комнаты", passport: "Загрузить паспорт/ID", register: "Зарегистрировать гостя",
-    uploading: "Загрузка...", refresh: "Обновить", done: "Готово", reopen: "Открыть заново", delete: "Удалить"
+    dashboard: "Панель управления",
+    guests: "Список гостей",
+    requests: "Запросы",
+    ai: "ИИ Консьерж",
+    settings: "Настройки",
+    checkInTitle: "Быстрая регистрация гостя",
+    firstName: "Имя",
+    surname: "Фамилия",
+    email: "Эл. почта",
+    phone: "Номер телефона",
+    room: "Номер комнаты",
+    passport: "Загрузить паспорт/ID",
+    register: "Зарегистрировать гостя",
+    uploading: "Загрузка...",
+    refresh: "Обновить",
+    done: "Готово",
+    reopen: "Открыть заново",
+    delete: "Удалить"
   },
   ar: {
-    dashboard: "لوحة التحكم", guests: "قائمة الضيوف", requests: "الطلبات", ai: "المساعد الذكي", settings: "الإعدادات",
-    checkInTitle: "تسجيل دخول سريع للضيف", firstName: "الاسم الأول", surname: "اسم العائلة", email: "البريد الإلكتروني",
-    phone: "رقم الهاتف", room: "رقم الغرفة", passport: "تحميل الجواز/الهوية", register: "تسجيل الضيف",
-    uploading: "جاري التحميل...", refresh: "تحديث", done: "تم", reopen: "إعادة فتح", delete: "حذف"
+    dashboard: "لوحة التحكم",
+    guests: "قائمة الضيوف",
+    requests: "الطلبات",
+    ai: "المساعد الذكي",
+    settings: "الإعدادات",
+    checkInTitle: "تسجيل دخول سريع للضيف",
+    firstName: "الاسم الأول",
+    surname: "اسم العائلة",
+    email: "البريد الإلكتروني",
+    phone: "رقم الهاتف",
+    room: "رقم الغرفة",
+    passport: "تحميل الجواز/الهوية",
+    register: "تسجيل الضيف",
+    uploading: "جاري التحميل...",
+    refresh: "تحديث",
+    done: "تم",
+    reopen: "إعادة فتح",
+    delete: "حذف"
   },
   zh: {
-    dashboard: "仪表板", guests: "客人列表", requests: "服务请求", ai: "AI 礼宾", settings: "设置",
-    checkInTitle: "快速办理入住", firstName: "名", surname: "姓", email: "电子邮件",
-    phone: "电话号码", room: "房间号", passport: "上传护照/身份证", register: "登记客人",
-    uploading: "上传中...", refresh: "刷新", done: "完成", reopen: "重新打开", delete: "删除"
+    dashboard: "仪表板",
+    guests: "客人列表",
+    requests: "服务请求",
+    ai: "AI 礼宾",
+    settings: "设置",
+    checkInTitle: "快速办理入住",
+    firstName: "名",
+    surname: "姓",
+    email: "电子邮件",
+    phone: "电话号码",
+    room: "房间号",
+    passport: "上传护照/身份证",
+    register: "登记客人",
+    uploading: "上传中...",
+    refresh: "刷新",
+    done: "完成",
+    reopen: "重新打开",
+    delete: "删除"
   },
   sv: {
-    dashboard: "Översikt", guests: "Gästlista", requests: "Begäranden", ai: "AI Concierge", settings: "Inställningar",
-    checkInTitle: "Snabb Incheckning", firstName: "Förnamn", surname: "Efternamn", email: "E-postadress",
-    phone: "Telefonnummer", room: "Rumsnummer", passport: "Ladda upp Pass/ID", register: "Registrera Gäst",
-    uploading: "Laddar upp...", refresh: "Uppdatera", done: "Klar", reopen: "Öppna igen", delete: "Ta bort"
+    dashboard: "Översikt",
+    guests: "Gästlista",
+    requests: "Begäranden",
+    ai: "AI Concierge",
+    settings: "Inställningar",
+    checkInTitle: "Snabb Incheckning",
+    firstName: "Förnamn",
+    surname: "Efternamn",
+    email: "E-postadress",
+    phone: "Telefonnummer",
+    room: "Rumsnummer",
+    passport: "Ladda upp Pass/ID",
+    register: "Registrera Gäst",
+    uploading: "Laddar upp...",
+    refresh: "Uppdatera",
+    done: "Klar",
+    reopen: "Öppna igen",
+    delete: "Ta bort"
   },
   ja: {
-    dashboard: "ダッシュボード", guests: "ゲスト一覧", requests: "リクエスト", ai: "AIコンシェルジュ", settings: "設定",
-    checkInTitle: "クイックチェックイン", firstName: "名", surname: "姓", email: "メールアドレス",
-    phone: "電話番号", room: "部屋番号", passport: "パスポート/IDをアップロード", register: "ゲストを登録",
-    uploading: "アップロード中...", refresh: "更新", done: "完了", reopen: "再オープン", delete: "削除"
+    dashboard: "ダッシュボード",
+    guests: "ゲスト一覧",
+    requests: "リクエスト",
+    ai: "AIコンシェルジュ",
+    settings: "設定",
+    checkInTitle: "クイックチェックイン",
+    firstName: "名",
+    surname: "姓",
+    email: "メールアドレス",
+    phone: "電話番号",
+    room: "部屋番号",
+    passport: "パスポート/IDをアップロード",
+    register: "ゲストを登録",
+    uploading: "アップロード中...",
+    refresh: "更新",
+    done: "完了",
+    reopen: "再オープン",
+    delete: "削除"
   },
   ko: {
-    dashboard: "대시보드", guests: "투숙객 목록", requests: "요청 사항", ai: "AI 컨시어지", settings: "설정",
-    checkInTitle: "빠른 체크인", firstName: "이름", surname: "성", email: "이메일 주소",
-    phone: "전화번호", room: "객실 번호", passport: "여권/ID 업로드", register: "투숙객 등록",
-    uploading: "업로드 중...", refresh: "새로고침", done: "완료", reopen: "다시 열기", delete: "삭제"
+    dashboard: "대시보드",
+    guests: "투숙객 목록",
+    requests: "요청 사항",
+    ai: "AI 컨시어지",
+    settings: "설정",
+    checkInTitle: "빠른 체크인",
+    firstName: "이름",
+    surname: "성",
+    email: "이메일 주소",
+    phone: "전화번호",
+    room: "객실 번호",
+    passport: "여권/ID 업로드",
+    register: "투숙객 등록",
+    uploading: "업로드 중...",
+    refresh: "새로고침",
+    done: "완료",
+    reopen: "다시 열기",
+    delete: "삭제"
   }
 };
 
@@ -192,14 +379,15 @@ const FormattedText: React.FC<{ text: string }> = ({ text }) => {
 
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
-  const t = (key: string) => translations[lang]?.[key] || translations['en']?.[key] || key;
+  const t = (key: string) => translations[lang][key] || key;
 
   const [session, setSession] = useState<any>(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'guests' | 'requests' | 'ai' | 'settings'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isGuestMode, setIsGuestMode] = useState(false);
   
-  // Form States
+  // Extended Check-in Form States
   const [firstName, setFirstName] = useState('');
   const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
@@ -214,6 +402,8 @@ export default function App() {
   const [loadingGuests, setLoadingGuests] = useState(false);
   const [refreshingRequests, setRefreshingRequests] = useState(false);
 
+  const [selectedQRRoom, setSelectedQRRoom] = useState<string | null>(null);
+
   // AI Chat States
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -226,6 +416,16 @@ export default function App() {
   const [chatRoom, setChatRoom] = useState('101');
   const [aiLoading, setAiLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomFromUrl = urlParams.get('room');
+    if (roomFromUrl) {
+      setChatRoom(roomFromUrl);
+      setIsGuestMode(true);
+      setActiveTab('ai');
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -253,6 +453,17 @@ export default function App() {
     if (session) {
       fetchGuests();
       fetchRequests();
+
+      const channel = supabase
+        .channel('schema-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_requests' }, () => {
+          fetchRequests();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [session]);
 
@@ -264,10 +475,11 @@ export default function App() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error) setGuests(data || []);
+      if (error) console.error(error);
+      else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } finally {
+    } fontally {
       setLoadingGuests(false);
     }
   }
@@ -280,14 +492,16 @@ export default function App() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error) setRequests(data || []);
+      if (error) console.error(error);
+      else setRequests(data || []);
     } catch (err) {
       console.error(err);
-    } finally {
+    } fontally {
       setRefreshingRequests(false);
     }
   }
 
+  // Handle Full Registration with Passport Upload
   async function handleAddGuest(e: React.FormEvent) {
     e.preventDefault();
     if (!firstName.trim() || !room.trim()) return;
@@ -371,7 +585,8 @@ export default function App() {
       }));
 
       const aiResponse = await askHotelAI(query, chatRoom, historyForAI);
-      setMessages((prev) => [...prev, { id: Date.now().toString(), sender: 'ai', text: aiResponse }]);
+      const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponse };
+      setMessages((prev) => [...prev, aiMsg]);
     } catch (err) {
       setMessages((prev) => [...prev, { id: Date.now().toString(), sender: 'ai', text: "Error fetching response." }]);
     } finally {
@@ -442,7 +657,7 @@ export default function App() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         
-        {/* Header with Language Switcher */}
+        {/* Top Header with Multilingual Switcher */}
         <header className="bg-white border-b border-slate-200 p-4 flex items-center justify-between">
           <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-slate-600">
             <Menu className="w-6 h-6" />
@@ -450,6 +665,7 @@ export default function App() {
 
           <h2 className="text-lg font-bold text-slate-800 capitalize">{t(activeTab)}</h2>
 
+          {/* Language Selector Dropdown */}
           <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
             <Globe className="w-4 h-4 text-indigo-600" />
             <select
@@ -467,4 +683,166 @@ export default function App() {
         </header>
 
         {/* View Switcher */}
-        <div className="flex-1 overflow-y
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+          {activeTab === 'dashboard' && (
+            <>
+              <Analytics guestsCount={guests.length} requests={requests} />
+
+              {/* Extended Multilingual Check-in Form */}
+              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 className="text-base font-bold text-slate-800 mb-4">{t('checkInTitle')}</h3>
+                
+                <form onSubmit={handleAddGuest} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <input
+                    type="text"
+                    placeholder={t('firstName')}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder={t('surname')}
+                    value={surname}
+                    onChange={(e) => setSurname(e.target.value)}
+                    className="px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="email"
+                    placeholder={t('email')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="tel"
+                    placeholder={t('phone')}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder={t('room')}
+                    value={room}
+                    onChange={(e) => setRoom(e.target.value)}
+                    className="px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+
+                  {/* Passport File Upload Button */}
+                  <div className="relative border border-dashed border-indigo-300 rounded-lg p-2 text-center bg-indigo-50/50 hover:bg-indigo-50 transition">
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => setPassportFile(e.target.files?.[0] || null)}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    />
+                    <div className="flex items-center justify-center space-x-2 text-xs font-semibold text-indigo-600">
+                      <Upload className="w-4 h-4" />
+                      <span className="truncate">{passportFile ? passportFile.name : t('passport')}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={uploading}
+                    className="sm:col-span-2 md:col-span-3 bg-indigo-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
+                  >
+                    {uploading ? t('uploading') : t('register')}
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+
+          {/* Guests Tab */}
+          {activeTab === 'guests' && (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h3 className="font-bold text-slate-800">{t('guests')}</h3>
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="px-3 py-1.5 border rounded-lg text-xs"
+                />
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {filteredGuests.map((g) => (
+                  <div key={g.id} className="p-4 flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-slate-800 text-sm">{g.name} {g.surname}</p>
+                      <p className="text-xs text-slate-400">{g.email} | {g.phone}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded">
+                        Room {g.room_number}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      {g.passport_url && (
+                        <a
+                          href={g.passport_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded text-xs flex items-center space-x-1"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>ID</span>
+                        </a>
+                      )}
+                      <button
+                        onClick={() => handleCheckOutGuest(g.id)}
+                        className="px-2.5 py-1 bg-rose-50 text-rose-600 rounded text-xs font-semibold"
+                      >
+                        Check Out
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Requests Tab */}
+          {activeTab === 'requests' && (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h3 className="font-bold text-slate-800">{t('requests')}</h3>
+                <button onClick={fetchRequests} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold">
+                  {t('refresh')}
+                </button>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {requests.map((req) => (
+                  <div key={req.id} className="p-4 flex justify-between items-center">
+                    <div>
+                      <span className="font-bold text-xs px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded">Room {req.room_number}</span>
+                      <p className="text-xs text-slate-800 mt-1">{req.request_text}</p>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleUpdateReqStatus(req.id, req.status === 'pending' ? 'completed' : 'pending')}
+                        className={`px-3 py-1 rounded text-xs font-semibold ${req.status === 'pending' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                      >
+                        {req.status === 'pending' ? t('done') : t('reopen')}
+                      </button>
+                      <button onClick={() => handleDeleteRequest(req.id)} className="p-1 bg-rose-50 text-rose-600 rounded">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+      }
