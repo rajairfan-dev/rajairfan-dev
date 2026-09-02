@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -6,16 +6,20 @@ import {
   Settings as SettingsIcon, 
   Menu, 
   X, 
+  Send, 
+  Bot, 
+  User, 
+  Sparkles, 
   LogOut, 
   Bell, 
   RotateCw,
   Trash2,
   Globe,
   Upload,
-  FileText,
-  Sparkles
+  FileText
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import { askHotelAI, ChatMessage } from './aiAgent';
 import Settings from './Settings';
 import Login from './Login';
 import Analytics from './Analytics';
@@ -321,6 +325,12 @@ interface GuestRequest {
   created_at: string;
 }
 
+interface Message {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+}
+
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
   const t = (key: string) => translations[lang]?.[key] || key;
@@ -343,6 +353,29 @@ export default function App() {
   const [requests, setRequests] = useState<GuestRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshingRequests, setRefreshingRequests] = useState(false);
+
+  // Chat AI Concierge States
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      sender: 'ai',
+      text: "Welcome! I am your 24/7 AI Concierge. How can I assist you today?"
+    }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatRoom, setChatRoom] = useState('101');
+  const [aiLoading, setAiLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (activeTab === 'ai') {
+      scrollToBottom();
+    }
+  }, [messages, activeTab]);
 
   useEffect(() => {
     let isMounted = true;
@@ -484,6 +517,48 @@ export default function App() {
     await supabase.from('guest_requests').delete().eq('id', id);
     fetchRequests();
   }
+
+  // Handle Send Chat Message
+  const handleSendMessage = async (customText?: string) => {
+    const textToSend = customText || chatInput;
+    if (!textToSend.trim() || aiLoading) return;
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      sender: 'user',
+      text: textToSend
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+    if (!customText) setChatInput('');
+    setAiLoading(true);
+
+    try {
+      const chatHistory: ChatMessage[] = messages.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        text: m.text
+      }));
+
+      const reply = await askHotelAI(textToSend, chatHistory, chatRoom);
+
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: 'ai',
+        text: reply
+      };
+
+      setMessages(prev => [...prev, aiMsg]);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        sender: 'ai',
+        text: "Sorry, I am having trouble answering right now."
+      }]);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   if (authChecking) {
     return (
@@ -743,9 +818,109 @@ export default function App() {
             </div>
           )}
 
+          {/* AI CONCIERGE TAB */}
+          {activeTab === 'ai' && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[calc(100vh-140px)]">
+              {/* Header */}
+              <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white">
+                    <Bot className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">AlpineStay AI Concierge</h3>
+                    <p className="text-xs text-slate-500">Always active to assist guests</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-slate-500 font-medium">Room:</span>
+                  <input
+                    type="text"
+                    value={chatRoom}
+                    onChange={(e) => setChatRoom(e.target.value)}
+                    className="w-16 px-2 py-1 text-xs border border-slate-300 rounded font-bold text-center"
+                  />
+                </div>
+              </div>
+
+              {/* Chat Body */}
+              <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                {messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`flex items-start space-x-2.5 ${m.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${m.sender === 'user' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-800 text-white'}`}>
+                      {m.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                    </div>
+
+                    <div className={`max-w-[75%] p-3.5 rounded-2xl text-xs leading-relaxed ${m.sender === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-tl-none'}`}>
+                      {m.text}
+                    </div>
+                  </div>
+                ))}
+
+                {aiLoading && (
+                  <div className="flex items-center space-x-2 text-slate-400 text-xs italic pl-10">
+                    <Sparkles className="w-4 h-4 animate-spin text-indigo-500" />
+                    <span>AI is typing...</span>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Quick Actions */}
+              <div className="px-4 py-2 border-t border-slate-100 flex flex-wrap gap-2 bg-slate-50/50">
+                <button
+                  onClick={() => handleSendMessage("Need extra towels for my room.")}
+                  className="px-2.5 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[11px] font-medium hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition"
+                >
+                  🧹 Need Extra Towels
+                </button>
+                <button
+                  onClick={() => handleSendMessage("What is the Wi-Fi password?")}
+                  className="px-2.5 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[11px] font-medium hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition"
+                >
+                  📶 Wi-Fi Password
+                </button>
+                <button
+                  onClick={() => handleSendMessage("What time is breakfast served?")}
+                  className="px-2.5 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-[11px] font-medium hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition"
+                >
+                  🍳 Breakfast Time
+                </button>
+              </div>
+
+              {/* Chat Input */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+                className="p-3 border-t border-slate-200 flex items-center space-x-2 bg-white rounded-b-xl"
+              >
+                <input
+                  type="text"
+                  placeholder="Type your request or question..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  type="submit"
+                  disabled={aiLoading || !chatInput.trim()}
+                  className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          )}
+
           {activeTab === 'settings' && <Settings />}
         </div>
       </div>
     </div>
   );
-}
+    }
