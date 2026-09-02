@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -6,26 +6,16 @@ import {
   Settings as SettingsIcon, 
   Menu, 
   X, 
-  Send, 
-  Bot, 
-  User, 
-  Sparkles, 
   LogOut, 
-  Search, 
   Bell, 
-  QrCode, 
-  Printer,
-  Download,
   RotateCw,
   Trash2,
-  CheckCircle2,
-  Clock,
   Globe,
   Upload,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
-import { askHotelAI, ChatMessage } from './aiAgent';
 import Settings from './Settings';
 import Login from './Login';
 import Analytics from './Analytics';
@@ -331,63 +321,16 @@ interface GuestRequest {
   created_at: string;
 }
 
-interface Message {
-  id: string;
-  sender: 'user' | 'ai';
-  text: string;
-}
-
-const FormattedText: React.FC<{ text: string }> = ({ text }) => {
-  const parseInlineMarkdown = (content: string) => {
-    const parts = content.split(/(\*\*.*?\*\*|\*.*?\*)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return <em key={i} className="italic text-slate-700">{part.slice(1, -1)}</em>;
-      }
-      return part;
-    });
-  };
-
-  const lines = text.split('\n');
-
-  return (
-    <div className="space-y-1">
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <div key={idx} className="h-1" />;
-        if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
-          const content = trimmed.substring(1).trim();
-          return (
-            <div key={idx} className="flex items-start space-x-2 my-0.5">
-              <span className="text-indigo-600 font-bold select-none">•</span>
-              <span className="flex-1">{parseInlineMarkdown(content)}</span>
-            </div>
-          );
-        }
-        return (
-          <p key={idx} className="leading-relaxed">
-            {parseInlineMarkdown(line)}
-          </p>
-        );
-      })}
-    </div>
-  );
-};
-
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
-  const t = (key: string) => translations[lang][key] || key;
+  const t = (key: string) => translations[lang]?.[key] || key;
 
   const [session, setSession] = useState<any>(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'guests' | 'requests' | 'ai' | 'settings'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isGuestMode, setIsGuestMode] = useState(false);
   
-  // Extended Check-in Form States
+  // Form Check-in
   const [firstName, setFirstName] = useState('');
   const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
@@ -399,33 +342,7 @@ export default function App() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [requests, setRequests] = useState<GuestRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loadingGuests, setLoadingGuests] = useState(false);
   const [refreshingRequests, setRefreshingRequests] = useState(false);
-
-  const [selectedQRRoom, setSelectedQRRoom] = useState<string | null>(null);
-
-  // AI Chat States
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      sender: 'ai',
-      text: "Welcome to AlpineStay! I am your 24/7 digital concierge."
-    }
-  ]);
-  const [chatInput, setChatInput] = useState('');
-  const [chatRoom, setChatRoom] = useState('101');
-  const [aiLoading, setAiLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomFromUrl = urlParams.get('room');
-    if (roomFromUrl) {
-      setChatRoom(roomFromUrl);
-      setIsGuestMode(true);
-      setActiveTab('ai');
-    }
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -469,7 +386,6 @@ export default function App() {
 
   async function fetchGuests() {
     try {
-      setLoadingGuests(true);
       const { data, error } = await supabase
         .from('guests')
         .select('*')
@@ -479,8 +395,6 @@ export default function App() {
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } fontally {
-      setLoadingGuests(false);
     }
   }
 
@@ -496,12 +410,11 @@ export default function App() {
       else setRequests(data || []);
     } catch (err) {
       console.error(err);
-    } fontally {
+    } finally {
       setRefreshingRequests(false);
     }
   }
 
-  // Handle Full Registration with Passport Upload
   async function handleAddGuest(e: React.FormEvent) {
     e.preventDefault();
     if (!firstName.trim() || !room.trim()) return;
@@ -512,12 +425,15 @@ export default function App() {
 
       if (passportFile) {
         const fileExt = passportFile.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
+        const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
+        
         const { data, error: uploadError } = await supabase.storage
           .from('passports')
           .upload(fileName, passportFile);
 
-        if (!uploadError && data) {
+        if (uploadError) {
+          console.error("Upload error:", uploadError.message);
+        } else if (data) {
           const { data: pubUrl } = supabase.storage.from('passports').getPublicUrl(data.path);
           passportUrl = pubUrl.publicUrl;
         }
@@ -535,7 +451,7 @@ export default function App() {
       ]);
 
       if (error) {
-        alert('Error adding guest: ' + error.message);
+        alert('Error: ' + error.message);
       } else {
         setFirstName('');
         setSurname('');
@@ -553,7 +469,7 @@ export default function App() {
   }
 
   async function handleCheckOutGuest(id: string) {
-    if (!window.confirm('Check out guest?')) return;
+    if (!window.confirm('Check-out this guest?')) return;
     await supabase.from('guests').delete().eq('id', id);
     fetchGuests();
   }
@@ -568,31 +484,6 @@ export default function App() {
     await supabase.from('guest_requests').delete().eq('id', id);
     fetchRequests();
   }
-
-  const handleSendAIChat = async (textToSend?: string) => {
-    const query = textToSend || chatInput;
-    if (!query.trim() || aiLoading) return;
-
-    const userMsg: Message = { id: Date.now().toString(), sender: 'user', text: query };
-    setMessages((prev) => [...prev, userMsg]);
-    if (!textToSend) setChatInput('');
-    setAiLoading(true);
-
-    try {
-      const historyForAI: ChatMessage[] = messages.slice(-6).map((m) => ({
-        role: m.sender === 'user' ? 'user' : 'assistant',
-        content: m.text,
-      }));
-
-      const aiResponse = await askHotelAI(query, chatRoom, historyForAI);
-      const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponse };
-      setMessages((prev) => [...prev, aiMsg]);
-    } catch (err) {
-      setMessages((prev) => [...prev, { id: Date.now().toString(), sender: 'ai', text: "Error fetching response." }]);
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
   if (authChecking) {
     return (
@@ -613,7 +504,7 @@ export default function App() {
   return (
     <div className={`flex h-screen bg-slate-100 font-sans overflow-hidden ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
       
-      {/* Sidebar */}
+      {/* Sidebar Navigation */}
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-200 flex flex-col justify-between ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div>
           <div className="p-5 border-b border-slate-800 flex items-center justify-between">
@@ -627,45 +518,49 @@ export default function App() {
           </div>
 
           <nav className="p-4 space-y-1">
-            <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm ${activeTab === 'dashboard' ? 'bg-indigo-600' : 'text-slate-400'}`}>
+            <button onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
               <LayoutDashboard className="w-5 h-5" />
               <span>{t('dashboard')}</span>
             </button>
-            <button onClick={() => setActiveTab('guests')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm ${activeTab === 'guests' ? 'bg-indigo-600' : 'text-slate-400'}`}>
+            <button onClick={() => { setActiveTab('guests'); setIsSidebarOpen(false); }} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'guests' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
               <Users className="w-5 h-5" />
               <span>{t('guests')}</span>
             </button>
-            <button onClick={() => setActiveTab('requests')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm ${activeTab === 'requests' ? 'bg-indigo-600' : 'text-slate-400'}`}>
+            <button onClick={() => { setActiveTab('requests'); setIsSidebarOpen(false); }} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'requests' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
               <Bell className="w-5 h-5" />
               <span>{t('requests')}</span>
             </button>
-            <button onClick={() => setActiveTab('ai')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm ${activeTab === 'ai' ? 'bg-indigo-600' : 'text-slate-400'}`}>
+            <button onClick={() => { setActiveTab('ai'); setIsSidebarOpen(false); }} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'ai' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
               <MessageSquare className="w-5 h-5" />
               <span>{t('ai')}</span>
+            </button>
+            <button onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'settings' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
+              <SettingsIcon className="w-5 h-5" />
+              <span>{t('settings')}</span>
             </button>
           </nav>
         </div>
 
         <div className="p-4 border-t border-slate-800">
-          <button onClick={() => supabase.auth.signOut()} className="flex items-center space-x-2 text-xs text-slate-400 hover:text-rose-400">
+          <button onClick={() => supabase.auth.signOut()} className="flex items-center space-x-2 text-xs text-slate-400 hover:text-rose-400 transition">
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         
-        {/* Top Header with Multilingual Switcher */}
-        <header className="bg-white border-b border-slate-200 p-4 flex items-center justify-between">
+        {/* Header */}
+        <header className="bg-white border-b border-slate-200 p-4 flex items-center justify-between shadow-sm">
           <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-slate-600">
             <Menu className="w-6 h-6" />
           </button>
 
           <h2 className="text-lg font-bold text-slate-800 capitalize">{t(activeTab)}</h2>
 
-          {/* Language Selector Dropdown */}
+          {/* Language Selector */}
           <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
             <Globe className="w-4 h-4 text-indigo-600" />
             <select
@@ -682,13 +577,12 @@ export default function App() {
           </div>
         </header>
 
-        {/* View Switcher */}
+        {/* Dashboard Views */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           {activeTab === 'dashboard' && (
             <>
               <Analytics guestsCount={guests.length} requests={requests} />
 
-              {/* Extended Multilingual Check-in Form */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h3 className="text-base font-bold text-slate-800 mb-4">{t('checkInTitle')}</h3>
                 
@@ -698,7 +592,7 @@ export default function App() {
                     placeholder={t('firstName')}
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    className="px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
                   <input
@@ -706,40 +600,40 @@ export default function App() {
                     placeholder={t('surname')}
                     value={surname}
                     onChange={(e) => setSurname(e.target.value)}
-                    className="px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    className="px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <input
                     type="email"
                     placeholder={t('email')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    className="px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <input
                     type="tel"
                     placeholder={t('phone')}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    className="px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <input
                     type="text"
                     placeholder={t('room')}
                     value={room}
                     onChange={(e) => setRoom(e.target.value)}
-                    className="px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    className="px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
 
-                  {/* Passport File Upload Button */}
-                  <div className="relative border border-dashed border-indigo-300 rounded-lg p-2 text-center bg-indigo-50/50 hover:bg-indigo-50 transition">
+                  {/* Passport Upload */}
+                  <div className="relative border border-dashed border-indigo-300 rounded-lg p-2 text-center bg-indigo-50/50 hover:bg-indigo-50 transition flex items-center justify-center">
                     <input
                       type="file"
                       accept="image/*,application/pdf"
                       onChange={(e) => setPassportFile(e.target.files?.[0] || null)}
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                     />
-                    <div className="flex items-center justify-center space-x-2 text-xs font-semibold text-indigo-600">
+                    <div className="flex items-center space-x-2 text-xs font-semibold text-indigo-600">
                       <Upload className="w-4 h-4" />
                       <span className="truncate">{passportFile ? passportFile.name : t('passport')}</span>
                     </div>
@@ -757,92 +651,101 @@ export default function App() {
             </>
           )}
 
-          {/* Guests Tab */}
           {activeTab === 'guests' && (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="p-4 border-b flex justify-between items-center">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="p-4 border-b flex justify-between items-center bg-slate-50">
                 <h3 className="font-bold text-slate-800">{t('guests')}</h3>
                 <input
                   type="text"
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="px-3 py-1.5 border rounded-lg text-xs"
+                  className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs"
                 />
               </div>
 
               <div className="divide-y divide-slate-100">
-                {filteredGuests.map((g) => (
-                  <div key={g.id} className="p-4 flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-slate-800 text-sm">{g.name} {g.surname}</p>
-                      <p className="text-xs text-slate-400">{g.email} | {g.phone}</p>
-                      <span className="inline-block mt-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded">
-                        Room {g.room_number}
-                      </span>
-                    </div>
+                {filteredGuests.length === 0 ? (
+                  <p className="p-6 text-center text-xs text-slate-400">No guests found.</p>
+                ) : (
+                  filteredGuests.map((g) => (
+                    <div key={g.id} className="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                      <div>
+                        <p className="font-bold text-slate-800 text-sm">{g.name} {g.surname}</p>
+                        <p className="text-xs text-slate-400">{g.email} | {g.phone}</p>
+                        <span className="inline-block mt-1 px-2.5 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/50">
+                          Room {g.room_number}
+                        </span>
+                      </div>
 
-                    <div className="flex items-center space-x-2">
-                      {g.passport_url && (
-                        <a
-                          href={g.passport_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded text-xs flex items-center space-x-1"
+                      <div className="flex items-center space-x-2">
+                        {g.passport_url && (
+                          <a
+                            href={g.passport_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium flex items-center space-x-1 hover:bg-slate-200 transition"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Passport</span>
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleCheckOutGuest(g.id)}
+                          className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-semibold hover:bg-rose-100 transition"
                         >
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>ID</span>
-                        </a>
-                      )}
-                      <button
-                        onClick={() => handleCheckOutGuest(g.id)}
-                        className="px-2.5 py-1 bg-rose-50 text-rose-600 rounded text-xs font-semibold"
-                      >
-                        Check Out
-                      </button>
+                          Check Out
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           )}
 
-          {/* Requests Tab */}
           {activeTab === 'requests' && (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="p-4 border-b flex justify-between items-center">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="p-4 border-b flex justify-between items-center bg-slate-50">
                 <h3 className="font-bold text-slate-800">{t('requests')}</h3>
-                <button onClick={fetchRequests} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold">
-                  {t('refresh')}
+                <button onClick={fetchRequests} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold flex items-center space-x-1">
+                  <RotateCw className={`w-3.5 h-3.5 ${refreshingRequests ? 'animate-spin' : ''}`} />
+                  <span>{t('refresh')}</span>
                 </button>
               </div>
 
               <div className="divide-y divide-slate-100">
-                {requests.map((req) => (
-                  <div key={req.id} className="p-4 flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-xs px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded">Room {req.room_number}</span>
-                      <p className="text-xs text-slate-800 mt-1">{req.request_text}</p>
-                    </div>
+                {requests.length === 0 ? (
+                  <p className="p-6 text-center text-xs text-slate-400">No requests found.</p>
+                ) : (
+                  requests.map((req) => (
+                    <div key={req.id} className="p-4 flex justify-between items-center">
+                      <div>
+                        <span className="font-bold text-xs px-2.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-full">Room {req.room_number}</span>
+                        <p className="text-xs text-slate-800 mt-1 font-medium">{req.request_text}</p>
+                      </div>
 
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleUpdateReqStatus(req.id, req.status === 'pending' ? 'completed' : 'pending')}
-                        className={`px-3 py-1 rounded text-xs font-semibold ${req.status === 'pending' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-                      >
-                        {req.status === 'pending' ? t('done') : t('reopen')}
-                      </button>
-                      <button onClick={() => handleDeleteRequest(req.id)} className="p-1 bg-rose-50 text-rose-600 rounded">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleUpdateReqStatus(req.id, req.status === 'pending' ? 'completed' : 'pending')}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${req.status === 'pending' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                        >
+                          {req.status === 'pending' ? t('done') : t('reopen')}
+                        </button>
+                        <button onClick={() => handleDeleteRequest(req.id)} className="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           )}
+
+          {activeTab === 'settings' && <Settings />}
         </div>
       </div>
     </div>
   );
-      }
+}
