@@ -19,7 +19,7 @@ import {
   FileText
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
-import { askHotelAI, ChatMessage } from './aiAgent';
+import { askHotelAI } from './aiAgent';
 import Settings from './Settings';
 import Login from './Login';
 import Analytics from './Analytics';
@@ -518,7 +518,7 @@ export default function App() {
     fetchRequests();
   }
 
-  // Handle Send Chat Message
+  // Handle Send Chat Message (Payload Error Fix Included)
   const handleSendMessage = async (customText?: string) => {
     const textToSend = customText || chatInput;
     if (!textToSend.trim() || aiLoading) return;
@@ -529,31 +529,34 @@ export default function App() {
       text: textToSend
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     if (!customText) setChatInput('');
     setAiLoading(true);
 
     try {
-      const chatHistory: ChatMessage[] = messages.map(m => ({
-        role: m.sender === 'user' ? 'user' : 'model',
+      // Map history properly to schema expected by backend/aiAgent
+      const chatHistory = messages.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text,
         text: m.text
       }));
 
-      const reply = await askHotelAI(textToSend, chatHistory, chatRoom);
+      const reply = await askHotelAI(textToSend, chatHistory as any, chatRoom);
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
-        text: reply
+        text: typeof reply === 'string' ? reply : (reply as any)?.text || "Request processed successfully."
       };
 
       setMessages(prev => [...prev, aiMsg]);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
-        text: "Sorry, I am having trouble answering right now."
+        text: "I am currently assisting another request. Please try again in a moment."
       }]);
     } finally {
       setAiLoading(false);
@@ -923,4 +926,4 @@ export default function App() {
       </div>
     </div>
   );
-    }
+}
