@@ -205,7 +205,7 @@ export default function App() {
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } fontally {
+    } finally {
       setLoadingGuests(false);
     }
   }
@@ -222,7 +222,7 @@ export default function App() {
       else setRequests(data || []);
     } catch (err) {
       console.error(err);
-    } fontally {
+    } finally {
       setRefreshingRequests(false);
     }
   }
@@ -321,7 +321,7 @@ export default function App() {
     } catch (err) {
       const errorMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: "Sorry, I encountered an issue. Please try again." };
       setMessages((prev) => [...prev, errorMsg]);
-    } fontally {
+    } finally {
       setAiLoading(false);
     }
   };
@@ -857,7 +857,7 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Mobile Cards View (Screen Responsiveness Fix) */}
+                {/* Mobile Cards View */}
                 <div className="block sm:hidden divide-y divide-slate-100">
                   {requests.length === 0 ? (
                     <div className="p-6 text-center text-slate-400 text-xs">
@@ -1108,4 +1108,4 @@ export default function App() {
       </div>
     </div>
   );
-  }
+            }
