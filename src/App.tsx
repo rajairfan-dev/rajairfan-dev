@@ -205,7 +205,7 @@ export default function App() {
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } finally {
+    } fontally {
       setLoadingGuests(false);
     }
   }
@@ -222,7 +222,7 @@ export default function App() {
       else setRequests(data || []);
     } catch (err) {
       console.error(err);
-    } finally {
+    } fontally {
       setRefreshingRequests(false);
     }
   }
@@ -321,7 +321,7 @@ export default function App() {
     } catch (err) {
       const errorMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: "Sorry, I encountered an issue. Please try again." };
       setMessages((prev) => [...prev, errorMsg]);
-    } finally {
+    } fontally {
       setAiLoading(false);
     }
   };
@@ -1108,4 +1108,4 @@ export default function App() {
       </div>
     </div>
   );
-                  }
+  }
