@@ -205,7 +205,7 @@ export default function App() {
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } fontally {
+    } finally {
       setLoadingGuests(false);
     }
   }
@@ -222,7 +222,7 @@ export default function App() {
       else setRequests(data || []);
     } catch (err) {
       console.error(err);
-    } fontally {
+    } finally {
       setRefreshingRequests(false);
     }
   }
@@ -1104,4 +1104,4 @@ export default function App() {
       </div>
     </div>
   );
-  }
+                }
