@@ -205,7 +205,7 @@ export default function App() {
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } finally {
+    } fontally {
       setLoadingGuests(false);
     }
   }
@@ -222,7 +222,7 @@ export default function App() {
       else setRequests(data || []);
     } catch (err) {
       console.error(err);
-    } finally {
+    } fontally {
       setRefreshingRequests(false);
     }
   }
@@ -746,7 +746,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Mobile Cards for Guests */}
                 <div className="block sm:hidden divide-y divide-slate-100">
                   {filteredGuests.length === 0 ? (
                     <p className="p-6 text-center text-xs text-slate-400">No matching guests found.</p>
@@ -783,7 +782,6 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Desktop Table for Guests */}
                 <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full text-left text-sm text-slate-600">
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
@@ -857,7 +855,6 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Mobile Cards View */}
                 <div className="block sm:hidden divide-y divide-slate-100">
                   {requests.length === 0 ? (
                     <div className="p-6 text-center text-slate-400 text-xs">
@@ -923,7 +920,6 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Desktop Table View */}
                 <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full text-left text-sm text-slate-600">
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
@@ -1108,4 +1104,4 @@ export default function App() {
       </div>
     </div>
   );
-    }
+  }
