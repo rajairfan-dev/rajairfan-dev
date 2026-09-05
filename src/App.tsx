@@ -18,10 +18,9 @@ import {
   Download,
   RotateCw,
   Trash2,
-  CheckCircle2,
-  Clock,
   Globe,
-  UserPlus
+  Upload,
+  CheckCircle2
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI, ChatMessage } from './aiAgent';
@@ -34,10 +33,14 @@ type Language = 'en' | 'it' | 'de';
 interface Guest {
   id: string;
   name: string;
+  surname?: string;
+  email?: string;
+  phone?: string;
   room_number: string | number;
   check_in_date?: string;
   check_out_date?: string;
   language?: string;
+  passport_url?: string;
   created_at: string;
 }
 
@@ -63,14 +66,18 @@ const translations = {
     aiConcierge: 'AI Concierge',
     settings: 'Settings',
     quickCheckIn: 'Quick Guest Check-In',
-    guestName: 'Guest Name',
+    firstName: 'First Name',
+    surname: 'Surname / Last Name',
+    email: 'Email Address',
+    phone: 'Phone Number',
     roomNumber: 'Room Number (e.g. 104)',
     checkInDate: 'Check-In Date',
     checkOutDate: 'Check-Out Date',
     preferredLang: 'Preferred Language',
+    passportUpload: 'Upload Passport / ID Photo',
     registerGuest: 'Register Guest',
     activeGuests: 'Checked-In Guests',
-    searchPlaceholder: 'Search name or room...',
+    searchPlaceholder: 'Search name, surname or room...',
     refresh: 'Refresh',
     noGuests: 'No active guests registered yet.',
     guestRequests: 'Guest Service Requests',
@@ -86,14 +93,18 @@ const translations = {
     aiConcierge: 'Concierge AI',
     settings: 'Impostazioni',
     quickCheckIn: 'Registrazione Rapida Ospite',
-    guestName: 'Nome Ospite',
+    firstName: 'Nome',
+    surname: 'Cognome',
+    email: 'Email',
+    phone: 'Numero di Telefono',
     roomNumber: 'Numero Camera (es. 104)',
     checkInDate: 'Data Check-In',
     checkOutDate: 'Data Check-Out',
     preferredLang: 'Lingua Preferita',
+    passportUpload: 'Carica Foto Passaporto / Documento',
     registerGuest: 'Registra Ospite',
     activeGuests: 'Ospiti In House',
-    searchPlaceholder: 'Cerca nome o camera...',
+    searchPlaceholder: 'Cerca nome, cognome o camera...',
     refresh: 'Aggiorna',
     noGuests: 'Nessun ospite registrato al momento.',
     guestRequests: 'Richieste Servizi Ospiti',
@@ -109,14 +120,18 @@ const translations = {
     aiConcierge: 'KI Concierge',
     settings: 'Einstellungen',
     quickCheckIn: 'Schneller Gäste Check-In',
-    guestName: 'Name des Gastes',
+    firstName: 'Vorname',
+    surname: 'Nachname',
+    email: 'E-Mail',
+    phone: 'Telefonnummer',
     roomNumber: 'Zimmernummer (z. B. 104)',
     checkInDate: 'Check-In-Datum',
     checkOutDate: 'Check-Out-Datum',
     preferredLang: 'Bevorzugte Sprache',
+    passportUpload: 'Reisepass / Ausweis hochladen',
     registerGuest: 'Gast Registrieren',
     activeGuests: 'Eingecheckte Gäste',
-    searchPlaceholder: 'Suche Name oder Zimmer...',
+    searchPlaceholder: 'Suche Name, Nachname oder Zimmer...',
     refresh: 'Aktualisieren',
     noGuests: 'Noch keine aktiven Gäste registriert.',
     guestRequests: 'Gästeservice-Anfragen',
@@ -181,12 +196,17 @@ export default function App() {
   const [lang, setLang] = useState<Language>('en');
   const t = translations[lang];
 
-  // Dashboard / Hotel Management States
-  const [name, setName] = useState('');
+  // Check-In Form State
+  const [firstName, setFirstName] = useState('');
+  const [surname, setSurname] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [room, setRoom] = useState('');
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
   const [guestLang, setGuestLang] = useState('English');
+  const [passportFile, setPassportFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [guests, setGuests] = useState<Guest[]>([]);
   const [requests, setRequests] = useState<GuestRequest[]>([]);
@@ -197,7 +217,7 @@ export default function App() {
   // Modal QR State
   const [selectedQRRoom, setSelectedQRRoom] = useState<string | null>(null);
 
-  // AI Chat States (UNTOUCHED)
+  // AI Chat States
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -315,12 +335,38 @@ export default function App() {
 
   async function handleAddGuest(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !room.trim()) return;
+    if (!firstName.trim() || !room.trim()) return;
 
+    setIsSubmitting(true);
     try {
+      let passportUrl = '';
+
+      if (passportFile) {
+        const fileExt = passportFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `passports/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('guest-documents')
+          .upload(filePath, passportFile);
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from('guest-documents')
+            .getPublicUrl(filePath);
+          passportUrl = publicUrlData.publicUrl;
+        }
+      }
+
+      const fullName = surname.trim() ? `${firstName.trim()} ${surname.trim()}` : firstName.trim();
+
       const payload: any = { 
-        name: name.trim(), 
-        room_number: room.trim() 
+        name: fullName, 
+        surname: surname.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        room_number: room.trim(),
+        passport_url: passportUrl
       };
 
       if (checkInDate) payload.check_in_date = checkInDate;
@@ -334,14 +380,20 @@ export default function App() {
       if (error) {
         alert('Error adding guest: ' + error.message);
       } else {
-        setName('');
+        setFirstName('');
+        setSurname('');
+        setEmail('');
+        setPhone('');
         setRoom('');
         setCheckInDate('');
         setCheckOutDate('');
+        setPassportFile(null);
         fetchGuests();
       }
     } catch (err: any) {
       alert('Error: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -393,7 +445,6 @@ export default function App() {
     }
   }
 
-  // AI Chat Handler (UNTOUCHED)
   const handleSendAIChat = async (textToSend?: string) => {
     const query = textToSend || chatInput;
     if (!query.trim() || aiLoading) return;
@@ -563,6 +614,7 @@ export default function App() {
   const filteredGuests = guests.filter(
     (g) =>
       g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (g.surname && g.surname.toLowerCase().includes(searchQuery.toLowerCase())) ||
       g.room_number.toString().toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -775,38 +827,80 @@ export default function App() {
 
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div className="flex items-center space-x-2 mb-4">
-                  <UserPlus className="w-5 h-5 text-indigo-600" />
+                  <User className="w-5 h-5 text-indigo-600" />
                   <h3 className="text-base font-bold text-slate-800">{t.quickCheckIn}</h3>
                 </div>
 
                 <form onSubmit={handleAddGuest} className="space-y-4">
+                  {/* Name and Surname */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      placeholder={t.guestName}
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      required
-                    />
-                    <input
-                      type="text"
-                      placeholder={t.roomNumber}
-                      value={room}
-                      onChange={(e) => setRoom(e.target.value)}
-                      className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      required
-                    />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.firstName}</label>
+                      <input
+                        type="text"
+                        placeholder="John"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.surname}</label>
+                      <input
+                        type="text"
+                        placeholder="Doe"
+                        value={surname}
+                        onChange={(e) => setSurname(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
                   </div>
 
+                  {/* Email & Phone */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.email}</label>
+                      <input
+                        type="email"
+                        placeholder="john.doe@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.phone}</label>
+                      <input
+                        type="tel"
+                        placeholder="+39 333 1234567"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Room Number & Dates */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.roomNumber}</label>
+                      <input
+                        type="text"
+                        placeholder="104"
+                        value={room}
+                        onChange={(e) => setRoom(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">{t.checkInDate}</label>
                       <input
                         type="date"
                         value={checkInDate}
                         onChange={(e) => setCheckInDate(e.target.value)}
-                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                     <div>
@@ -815,9 +909,13 @@ export default function App() {
                         type="date"
                         value={checkOutDate}
                         onChange={(e) => setCheckOutDate(e.target.value)}
-                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
+                  </div>
+
+                  {/* Language and Passport Upload */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">{t.preferredLang}</label>
                       <select
@@ -830,13 +928,26 @@ export default function App() {
                         <option value="Deutsch">Deutsch</option>
                       </select>
                     </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.passportUpload}</label>
+                      <div className="relative flex items-center">
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => setPassportFile(e.target.files ? e.target.files[0] : null)}
+                          className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-300 rounded-lg p-1 cursor-pointer"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full sm:w-auto bg-indigo-600 text-white py-2.5 px-6 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-100"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto bg-indigo-600 text-white py-2.5 px-6 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-100 disabled:opacity-50"
                   >
-                    {t.registerGuest}
+                    {isSubmitting ? 'Registering...' : t.registerGuest}
                   </button>
                 </form>
               </div>
@@ -875,23 +986,30 @@ export default function App() {
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                       <tr>
                         <th className="p-3.5 pl-4">Guest Name</th>
+                        <th className="p-3.5">Contact</th>
                         <th className="p-3.5">Room #</th>
                         <th className="p-3.5">Check-In / Out</th>
-                        <th className="p-3.5">Lang</th>
+                        <th className="p-3.5">Document</th>
                         <th className="p-3.5 text-right pr-4">{t.actions}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredGuests.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="p-6 text-center text-slate-400">
+                          <td colSpan={6} className="p-6 text-center text-slate-400">
                             {t.noGuests}
                           </td>
                         </tr>
                       ) : (
                         filteredGuests.map((g) => (
                           <tr key={g.id} className="hover:bg-slate-50 transition">
-                            <td className="p-3.5 pl-4 font-bold text-slate-800">{g.name}</td>
+                            <td className="p-3.5 pl-4 font-bold text-slate-800">
+                              {g.name}
+                            </td>
+                            <td className="p-3.5 text-xs text-slate-500">
+                              <div>{g.email || '-'}</div>
+                              <div className="text-[11px] text-slate-400">{g.phone || '-'}</div>
+                            </td>
                             <td className="p-3.5">
                               <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/50">
                                 Room {g.room_number}
@@ -900,8 +1018,19 @@ export default function App() {
                             <td className="p-3.5 text-xs text-slate-500 whitespace-nowrap">
                               {g.check_in_date || new Date(g.created_at).toLocaleDateString()} {g.check_out_date ? `→ ${g.check_out_date}` : ''}
                             </td>
-                            <td className="p-3.5 text-xs font-medium text-slate-600">
-                              {g.language || 'English'}
+                            <td className="p-3.5 text-xs">
+                              {g.passport_url ? (
+                                <a
+                                  href={g.passport_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-indigo-600 font-semibold hover:underline"
+                                >
+                                  View Passport
+                                </a>
+                              ) : (
+                                <span className="text-slate-400">N/A</span>
+                              )}
                             </td>
                             <td className="p-3.5 text-right pr-4 space-x-2 whitespace-nowrap">
                               <button
@@ -1131,4 +1260,4 @@ export default function App() {
       </div>
     </div>
   );
-          }
+      }
