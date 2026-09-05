@@ -19,7 +19,9 @@ import {
   RotateCw,
   Trash2,
   CheckCircle2,
-  Clock
+  Clock,
+  Globe,
+  UserPlus
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { askHotelAI, ChatMessage } from './aiAgent';
@@ -27,10 +29,15 @@ import Settings from './Settings';
 import Login from './Login';
 import Analytics from './Analytics';
 
+type Language = 'en' | 'it' | 'de';
+
 interface Guest {
   id: string;
   name: string;
   room_number: string | number;
+  check_in_date?: string;
+  check_out_date?: string;
+  language?: string;
   created_at: string;
 }
 
@@ -47,6 +54,78 @@ interface Message {
   sender: 'user' | 'ai';
   text: string;
 }
+
+const translations = {
+  en: {
+    dashboard: 'Dashboard',
+    guests: 'Guests List',
+    requests: 'Requests',
+    aiConcierge: 'AI Concierge',
+    settings: 'Settings',
+    quickCheckIn: 'Quick Guest Check-In',
+    guestName: 'Guest Name',
+    roomNumber: 'Room Number (e.g. 104)',
+    checkInDate: 'Check-In Date',
+    checkOutDate: 'Check-Out Date',
+    preferredLang: 'Preferred Language',
+    registerGuest: 'Register Guest',
+    activeGuests: 'Checked-In Guests',
+    searchPlaceholder: 'Search name or room...',
+    refresh: 'Refresh',
+    noGuests: 'No active guests registered yet.',
+    guestRequests: 'Guest Service Requests',
+    manageRequests: 'Manage pending and completed requests',
+    actions: 'Actions',
+    done: 'Done',
+    reopen: 'Re-open'
+  },
+  it: {
+    dashboard: 'Pannello di Controllo',
+    guests: 'Elenco Ospiti',
+    requests: 'Richieste',
+    aiConcierge: 'Concierge AI',
+    settings: 'Impostazioni',
+    quickCheckIn: 'Registrazione Rapida Ospite',
+    guestName: 'Nome Ospite',
+    roomNumber: 'Numero Camera (es. 104)',
+    checkInDate: 'Data Check-In',
+    checkOutDate: 'Data Check-Out',
+    preferredLang: 'Lingua Preferita',
+    registerGuest: 'Registra Ospite',
+    activeGuests: 'Ospiti In House',
+    searchPlaceholder: 'Cerca nome o camera...',
+    refresh: 'Aggiorna',
+    noGuests: 'Nessun ospite registrato al momento.',
+    guestRequests: 'Richieste Servizi Ospiti',
+    manageRequests: 'Gestisci le richieste in attesa e completate',
+    actions: 'Azioni',
+    done: 'Fatto',
+    reopen: 'Riapri'
+  },
+  de: {
+    dashboard: 'Dashboard',
+    guests: 'Gästeliste',
+    requests: 'Anfragen',
+    aiConcierge: 'KI Concierge',
+    settings: 'Einstellungen',
+    quickCheckIn: 'Schneller Gäste Check-In',
+    guestName: 'Name des Gastes',
+    roomNumber: 'Zimmernummer (z. B. 104)',
+    checkInDate: 'Check-In-Datum',
+    checkOutDate: 'Check-Out-Datum',
+    preferredLang: 'Bevorzugte Sprache',
+    registerGuest: 'Gast Registrieren',
+    activeGuests: 'Eingecheckte Gäste',
+    searchPlaceholder: 'Suche Name oder Zimmer...',
+    refresh: 'Aktualisieren',
+    noGuests: 'Noch keine aktiven Gäste registriert.',
+    guestRequests: 'Gästeservice-Anfragen',
+    manageRequests: 'Offene und erledigte Anfragen verwalten',
+    actions: 'Aktionen',
+    done: 'Erledigt',
+    reopen: 'Wiederöffnen'
+  }
+};
 
 const FormattedText: React.FC<{ text: string }> = ({ text }) => {
   const parseInlineMarkdown = (content: string) => {
@@ -98,9 +177,17 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGuestMode, setIsGuestMode] = useState(false);
   
+  // Multilingual State
+  const [lang, setLang] = useState<Language>('en');
+  const t = translations[lang];
+
   // Dashboard / Hotel Management States
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
+  const [guestLang, setGuestLang] = useState('English');
+
   const [guests, setGuests] = useState<Guest[]>([]);
   const [requests, setRequests] = useState<GuestRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -110,7 +197,7 @@ export default function App() {
   // Modal QR State
   const [selectedQRRoom, setSelectedQRRoom] = useState<string | null>(null);
 
-  // AI Chat States
+  // AI Chat States (UNTOUCHED)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -124,14 +211,13 @@ export default function App() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const quickPrompts = [
-    { label: '🧹 Need Extra Towels', query: 'Please send 2 extra towels to my room.' },
+    { label: '🧹 Extra Towels', query: 'Please send 2 extra towels to my room.' },
     { label: '💧 Water Bottles', query: 'Can housekeeping bring extra bottled water?' },
     { label: '🏎️ Lombardy & Modena', query: 'Suggest a luxury trip for Lombardy (Milan) and Emilia-Romagna (Ferrari/Modena).' },
     { label: '🏔️ Dolomites Skiing', query: 'Recommend premier ski resorts and luxury chalets in the Dolomites.' },
     { label: '🍝 Michelin Dining', query: 'What are the top Michelin-starred restaurants near Lake Garda?' }
   ];
 
-  // Detect URL query room
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomFromUrl = urlParams.get('room');
@@ -232,15 +318,26 @@ export default function App() {
     if (!name.trim() || !room.trim()) return;
 
     try {
+      const payload: any = { 
+        name: name.trim(), 
+        room_number: room.trim() 
+      };
+
+      if (checkInDate) payload.check_in_date = checkInDate;
+      if (checkOutDate) payload.check_out_date = checkOutDate;
+      if (guestLang) payload.language = guestLang;
+
       const { error } = await supabase
         .from('guests')
-        .insert([{ name: name.trim(), room_number: room.trim() }]);
+        .insert([payload]);
 
       if (error) {
         alert('Error adding guest: ' + error.message);
       } else {
         setName('');
         setRoom('');
+        setCheckInDate('');
+        setCheckOutDate('');
         fetchGuests();
       }
     } catch (err: any) {
@@ -282,7 +379,7 @@ export default function App() {
   }
 
   async function handleDeleteRequest(id: string) {
-    if (!window.confirm('Is request ko delete karna chahte hain?')) return;
+    if (!window.confirm('Delete this request?')) return;
     try {
       const { error } = await supabase
         .from('guest_requests')
@@ -296,6 +393,7 @@ export default function App() {
     }
   }
 
+  // AI Chat Handler (UNTOUCHED)
   const handleSendAIChat = async (textToSend?: string) => {
     const query = textToSend || chatInput;
     if (!query.trim() || aiLoading) return;
@@ -472,32 +570,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden !important;
-          }
-          #printable-qr-modal, #printable-qr-modal * {
-            visibility: visible !important;
-          }
-          #printable-qr-modal {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            background: white !important;
-            box-shadow: none !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
-
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -533,10 +605,6 @@ export default function App() {
               />
             </div>
 
-            <p className="text-[11px] text-slate-400 font-mono break-all px-2">
-              {`${window.location.origin}?room=${selectedQRRoom}`}
-            </p>
-
             <div className="no-print grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={() => handleDownloadQR(selectedQRRoom)}
@@ -557,6 +625,7 @@ export default function App() {
         </div>
       )}
 
+      {/* Sidebar */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out flex flex-col justify-between ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -591,7 +660,7 @@ export default function App() {
               }`}
             >
               <LayoutDashboard className="w-5 h-5" />
-              <span>Dashboard</span>
+              <span>{t.dashboard}</span>
             </button>
 
             <button
@@ -603,7 +672,7 @@ export default function App() {
               }`}
             >
               <Users className="w-5 h-5" />
-              <span>Guests List</span>
+              <span>{t.guests}</span>
             </button>
 
             <button
@@ -616,7 +685,7 @@ export default function App() {
             >
               <div className="flex items-center space-x-3">
                 <Bell className="w-5 h-5" />
-                <span>Requests</span>
+                <span>{t.requests}</span>
               </div>
               {pendingCount > 0 && (
                 <span className="px-2 py-0.5 text-xs bg-rose-500 text-white font-bold rounded-full animate-pulse">
@@ -634,7 +703,7 @@ export default function App() {
               }`}
             >
               <MessageSquare className="w-5 h-5" />
-              <span>AI Concierge</span>
+              <span>{t.aiConcierge}</span>
             </button>
 
             <button
@@ -646,7 +715,7 @@ export default function App() {
               }`}
             >
               <SettingsIcon className="w-5 h-5" />
-              <span>Settings</span>
+              <span>{t.settings}</span>
             </button>
           </nav>
         </div>
@@ -670,18 +739,33 @@ export default function App() {
         </div>
       </aside>
 
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="bg-white border-b border-slate-200 p-4 flex items-center justify-between">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="lg:hidden text-slate-600 hover:text-slate-900"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-          <h2 className="text-lg font-bold text-slate-800 capitalize">
-            {activeTab === 'ai' ? 'AI Concierge View' : activeTab}
-          </h2>
-          <div className="w-6 h-6 lg:hidden" />
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden text-slate-600 hover:text-slate-900"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <h2 className="text-lg font-bold text-slate-800 capitalize">
+              {t[activeTab as keyof typeof t] || activeTab}
+            </h2>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Globe className="w-4 h-4 text-indigo-600" />
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as Language)}
+              className="bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg p-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="en">🇬🇧 English</option>
+              <option value="it">🇮🇹 Italiano</option>
+              <option value="de">🇩🇪 Deutsch</option>
+            </select>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto">
@@ -690,29 +774,69 @@ export default function App() {
               <Analytics guestsCount={guests.length} requests={requests} />
 
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h3 className="text-base font-bold text-slate-800 mb-4">Quick Guest Check-In</h3>
-                <form onSubmit={handleAddGuest} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Guest Name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Room Number (e.g. 104)"
-                    value={room}
-                    onChange={(e) => setRoom(e.target.value)}
-                    className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
-                  />
+                <div className="flex items-center space-x-2 mb-4">
+                  <UserPlus className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-base font-bold text-slate-800">{t.quickCheckIn}</h3>
+                </div>
+
+                <form onSubmit={handleAddGuest} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder={t.guestName}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder={t.roomNumber}
+                      value={room}
+                      onChange={(e) => setRoom(e.target.value)}
+                      className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.checkInDate}</label>
+                      <input
+                        type="date"
+                        value={checkInDate}
+                        onChange={(e) => setCheckInDate(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.checkOutDate}</label>
+                      <input
+                        type="date"
+                        value={checkOutDate}
+                        onChange={(e) => setCheckOutDate(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.preferredLang}</label>
+                      <select
+                        value={guestLang}
+                        onChange={(e) => setGuestLang(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                      >
+                        <option value="English">English</option>
+                        <option value="Italiano">Italiano</option>
+                        <option value="Deutsch">Deutsch</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
-                    className="bg-indigo-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
+                    className="w-full sm:w-auto bg-indigo-600 text-white py-2.5 px-6 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-100"
                   >
-                    Register Guest
+                    {t.registerGuest}
                   </button>
                 </form>
               </div>
@@ -723,13 +847,13 @@ export default function App() {
             <div className="p-4 sm:p-6">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <h3 className="font-bold text-slate-800 text-base">Checked-In Guests</h3>
+                  <h3 className="font-bold text-slate-800 text-base">{t.activeGuests}</h3>
                   <div className="flex items-center space-x-2">
                     <div className="relative flex-1 sm:w-64">
                       <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Search name or room..."
+                        placeholder={t.searchPlaceholder}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
@@ -741,62 +865,27 @@ export default function App() {
                       className="px-3.5 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition flex items-center space-x-1.5 border border-indigo-200 active:scale-95 disabled:opacity-50 shrink-0"
                     >
                       <RotateCw className={`w-3.5 h-3.5 ${loadingGuests ? 'animate-spin' : ''}`} />
-                      <span>Refresh</span>
+                      <span>{t.refresh}</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="block sm:hidden divide-y divide-slate-100">
-                  {filteredGuests.length === 0 ? (
-                    <p className="p-6 text-center text-xs text-slate-400">No matching guests found.</p>
-                  ) : (
-                    filteredGuests.map((g) => (
-                      <div key={g.id} className="p-4 space-y-3 bg-white">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-slate-900 text-sm">{g.name}</span>
-                          <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/50">
-                            Room {g.room_number}
-                          </span>
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          Check-in: {new Date(g.created_at).toLocaleDateString()}
-                        </div>
-                        <div className="flex items-center justify-end space-x-2 pt-1">
-                          <button
-                            onClick={() => setSelectedQRRoom(g.room_number.toString())}
-                            className="inline-flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold border border-indigo-200/50"
-                          >
-                            <QrCode className="w-3.5 h-3.5" />
-                            <span>QR</span>
-                          </button>
-                          <button
-                            onClick={() => handleCheckOutGuest(g.id)}
-                            className="inline-flex items-center space-x-1 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs font-semibold border border-rose-200/50"
-                          >
-                            <LogOut className="w-3.5 h-3.5" />
-                            <span>Check Out</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="hidden sm:block overflow-x-auto">
+                <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm text-slate-600">
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                       <tr>
                         <th className="p-3.5 pl-4">Guest Name</th>
                         <th className="p-3.5">Room #</th>
-                        <th className="p-3.5">Check-In Date</th>
-                        <th className="p-3.5 text-right pr-4">Actions</th>
+                        <th className="p-3.5">Check-In / Out</th>
+                        <th className="p-3.5">Lang</th>
+                        <th className="p-3.5 text-right pr-4">{t.actions}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredGuests.length === 0 ? (
                         <tr>
-                          <td colSpan={4} className="p-6 text-center text-slate-400">
-                            {searchQuery ? 'No matching guests found.' : 'No active guests registered yet.'}
+                          <td colSpan={5} className="p-6 text-center text-slate-400">
+                            {t.noGuests}
                           </td>
                         </tr>
                       ) : (
@@ -808,8 +897,11 @@ export default function App() {
                                 Room {g.room_number}
                               </span>
                             </td>
-                            <td className="p-3.5 text-xs text-slate-400 whitespace-nowrap">
-                              {new Date(g.created_at).toLocaleDateString()}
+                            <td className="p-3.5 text-xs text-slate-500 whitespace-nowrap">
+                              {g.check_in_date || new Date(g.created_at).toLocaleDateString()} {g.check_out_date ? `→ ${g.check_out_date}` : ''}
+                            </td>
+                            <td className="p-3.5 text-xs font-medium text-slate-600">
+                              {g.language || 'English'}
                             </td>
                             <td className="p-3.5 text-right pr-4 space-x-2 whitespace-nowrap">
                               <button
@@ -842,8 +934,8 @@ export default function App() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                   <div>
-                    <h3 className="font-bold text-slate-800 text-base">Guest Service Requests</h3>
-                    <p className="text-xs text-slate-400">Manage pending and completed requests</p>
+                    <h3 className="font-bold text-slate-800 text-base">{t.guestRequests}</h3>
+                    <p className="text-xs text-slate-400">{t.manageRequests}</p>
                   </div>
                   <button 
                     onClick={fetchRequests} 
@@ -851,76 +943,11 @@ export default function App() {
                     className="px-3.5 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition flex items-center space-x-1.5 border border-indigo-200 active:scale-95 disabled:opacity-50"
                   >
                     <RotateCw className={`w-3.5 h-3.5 ${refreshingRequests ? 'animate-spin' : ''}`} />
-                    <span>Refresh</span>
+                    <span>{t.refresh}</span>
                   </button>
                 </div>
 
-                <div className="block sm:hidden divide-y divide-slate-100">
-                  {requests.length === 0 ? (
-                    <div className="p-6 text-center text-slate-400 text-xs">
-                      No requests received yet.
-                    </div>
-                  ) : (
-                    requests.map((req) => (
-                      <div key={req.id} className="p-4 space-y-2 bg-white">
-                        <div className="flex justify-between items-start">
-                          <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/50">
-                            Room {req.room_number}
-                          </span>
-                          <div className="flex items-center space-x-1.5 text-xs text-slate-400">
-                            <Clock className="w-3 h-3" />
-                            <span>{new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-xs text-slate-800 font-medium py-1">
-                          {req.request_text}
-                        </p>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-50">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                              req.status === 'completed'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                                : 'bg-amber-50 text-amber-700 border border-amber-200/60'
-                            }`}
-                          >
-                            {req.status}
-                          </span>
-
-                          <div className="flex items-center space-x-2">
-                            {req.status === 'pending' ? (
-                              <button
-                                onClick={() => handleUpdateReqStatus(req.id, 'completed')}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center space-x-1"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Done</span>
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleUpdateReqStatus(req.id, 'pending')}
-                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium transition"
-                              >
-                                Re-open
-                              </button>
-                            )}
-
-                            <button
-                              onClick={() => handleDeleteRequest(req.id)}
-                              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition border border-rose-200/50"
-                              title="Delete Request"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="hidden sm:block overflow-x-auto">
+                <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm text-slate-600">
                     <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                       <tr>
@@ -928,7 +955,7 @@ export default function App() {
                         <th className="p-3.5">Request</th>
                         <th className="p-3.5 w-24">Time</th>
                         <th className="p-3.5 w-28">Status</th>
-                        <th className="p-3.5 text-right pr-4 w-36">Actions</th>
+                        <th className="p-3.5 text-right pr-4 w-36">{t.actions}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -967,14 +994,14 @@ export default function App() {
                                   onClick={() => handleUpdateReqStatus(req.id, 'completed')}
                                   className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold shadow-sm transition"
                                 >
-                                  Done
+                                  {t.done}
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => handleUpdateReqStatus(req.id, 'pending')}
                                   className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-xs font-medium transition"
                                 >
-                                  Re-open
+                                  {t.reopen}
                                 </button>
                               )}
                               <button
@@ -1104,4 +1131,4 @@ export default function App() {
       </div>
     </div>
   );
-                }
+          }
