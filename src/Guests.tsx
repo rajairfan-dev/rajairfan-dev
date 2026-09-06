@@ -37,7 +37,7 @@ export default function Guests({
   t
 }: GuestsProps) {
   return (
-    <div className="p-4 sm:p-6 space-y-5 max-w-full">
+    <div className="p-4 sm:p-6 space-y-5 max-w-full overflow-hidden">
       <div>
         <h2 className="text-xl font-extrabold text-slate-900">{t?.guestRecords || 'Guest Records'}</h2>
         <p className="text-xs text-slate-500 mt-0.5">
@@ -45,21 +45,22 @@ export default function Guests({
         </p>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1">
+      <div className="flex items-center gap-2 w-full">
+        <div className="relative flex-1 min-w-0">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder={t?.searchPlaceholder || 'Search by name or room...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+            className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
           />
         </div>
         <button
+          type="button"
           onClick={fetchGuests}
           disabled={loadingGuests}
-          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm text-slate-600 disabled:opacity-50"
+          className="shrink-0 p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition shadow-sm text-slate-600 disabled:opacity-50 touch-manipulation cursor-pointer"
           title="Refresh Guests"
         >
           <RotateCw className={`w-4 h-4 ${loadingGuests ? 'animate-spin text-indigo-600' : ''}`} />
@@ -72,7 +73,7 @@ export default function Guests({
         </div>
       ) : (
         <>
-          {/* Mobile Card Layout (Visible on Small Screens) */}
+          {/* Mobile Card Layout */}
           <div className="space-y-3 md:hidden">
             {filteredGuests.map((guest) => (
               <div key={guest.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -101,6 +102,7 @@ export default function Guests({
 
                 <div className="flex items-center space-x-2 pt-1">
                   <button
+                    type="button"
                     onClick={() => setSelectedQRRoom(guest.room_number.toString())}
                     className="flex-1 flex items-center justify-center space-x-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition"
                   >
@@ -108,6 +110,7 @@ export default function Guests({
                     <span>QR Code</span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleCheckOutGuest(guest.id)}
                     className="flex-1 flex items-center justify-center space-x-1 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg transition"
                   >
@@ -119,7 +122,7 @@ export default function Guests({
             ))}
           </div>
 
-          {/* Desktop Table View (Hidden on Mobile) */}
+          {/* Desktop Table View */}
           <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -164,6 +167,7 @@ export default function Guests({
                     <td className="py-4 px-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end space-x-2">
                         <button
+                          type="button"
                           onClick={() => setSelectedQRRoom(guest.room_number.toString())}
                           className="flex items-center space-x-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition"
                         >
@@ -171,6 +175,7 @@ export default function Guests({
                           <span>QR</span>
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleCheckOutGuest(guest.id)}
                           className="flex items-center space-x-1 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg transition"
                         >
@@ -188,4 +193,4 @@ export default function Guests({
       )}
     </div>
   );
-                      }
+                  }
