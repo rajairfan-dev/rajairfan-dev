@@ -557,7 +557,7 @@ How may I assist your luxury stay today?`;
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   return (
-    <div className="flex h-screen bg-slate-100 font-sans overflow-hidden w-screen">
+    <div className="flex h-screen bg-slate-100 font-sans overflow-hidden w-full max-w-full">
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -728,7 +728,7 @@ How may I assist your luxury stay today?`;
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden w-full max-w-full">
         <header className="bg-white border-b border-slate-200 p-4 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3">
             <button
@@ -758,7 +758,7 @@ How may I assist your luxury stay today?`;
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 w-full max-w-full">
           {activeTab === 'dashboard' && (
             <div className="p-4 sm:p-6 space-y-6">
               <Analytics guestsCount={guests.length} requests={requests} />
@@ -891,31 +891,35 @@ How may I assist your luxury stay today?`;
           )}
 
           {activeTab === 'guests' && (
-            <Guests
-              filteredGuests={filteredGuests}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              fetchGuests={fetchGuests}
-              loadingGuests={loadingGuests}
-              setSelectedQRRoom={setSelectedQRRoom}
-              handleCheckOutGuest={handleCheckOutGuest}
-              t={t}
-            />
+            <div className="w-full max-w-full overflow-x-hidden">
+              <Guests
+                filteredGuests={filteredGuests}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                fetchGuests={fetchGuests}
+                loadingGuests={loadingGuests}
+                setSelectedQRRoom={setSelectedQRRoom}
+                handleCheckOutGuest={handleCheckOutGuest}
+                t={t}
+              />
+            </div>
           )}
 
           {activeTab === 'requests' && (
-            <Requests
-              requests={requests}
-              fetchRequests={fetchRequests}
-              refreshingRequests={refreshingRequests}
-              handleUpdateReqStatus={handleUpdateReqStatus}
-              handleDeleteRequest={handleDeleteRequest}
-              t={t}
-            />
+            <div className="w-full max-w-full overflow-x-hidden">
+              <Requests
+                requests={requests}
+                fetchRequests={fetchRequests}
+                refreshingRequests={refreshingRequests}
+                handleUpdateReqStatus={handleUpdateReqStatus}
+                handleDeleteRequest={handleDeleteRequest}
+                t={t}
+              />
+            </div>
           )}
 
           {activeTab === 'ai' && (
-            <div className="flex flex-col h-[calc(100vh-65px)] bg-slate-100">
+            <div className="flex flex-col h-[calc(100vh-65px)] bg-slate-100 min-w-0">
               <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow-sm shrink-0">
                 <div className="flex items-center space-x-2">
                   <Bot className="w-5 h-5" />
@@ -1041,4 +1045,4 @@ How may I assist your luxury stay today?`;
       </div>
     </div>
   );
-                  }
+          }
