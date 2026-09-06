@@ -196,3 +196,9 @@ export const translations: Record<Language, Record<string, string>> = {
     occupancyRate: '객실 점유율', activeGuests: '투숙 중인 고객', checkedIn: '체크인 완료', pendingRequests: '대기 중인 요청', actionRequired: '조치 필요', resolutionEfficiency: '처리 효율성', requestsDone: '완료된 요청', liveDemandTitle: '실시간 서비스 수요 분배', housekeepingDemand: '하우스키핑 및 어메니티', diningDemand: '다이닝 및 룸서비스', conciergeDemand: '컨시어지 및 투어', quickCheckIn: '빠른 고객 체크인', guestName: '고객 성함', roomNumber: '객실 번호', checkInDate: '체크인 날짜', checkOutDate: '체크아웃 날짜', preferredLang: '선호 언어', registerGuest: '고객 등록', hotelSettingsTitle: '호텔 설정 및 구성', hotelSettingsSubtitle: '호텔 정보, 다국어 설정 및 보안 관리', generalConfig: '일반 구성', hotelName: '호텔 이름', wifiSsid: 'Wi-Fi 이름 (SSID)', wifiPass: 'Wi-Fi 비밀번호', breakfastTimings: '조식 시간', checkoutTime: '체크아웃 시간', accountSecurity: '계정 보안', newPassword: '새 비밀번호', confirmPassword: '비밀번호 확인', updatePassword: '비밀번호 업데이트', aiWelcome: "AlpineStay에 오신 것을 환영합니다! 24시간 디지털 컨시어지입니다.\n\n• Wi-Fi: AlpineStay_Guest | 비밀번호: alpine2026\n• 조식: 07:00 – 10:30\n• 체크아웃: 11:00\n\n오늘 어떤 도움이 필요하신가요?", promptTowels: "🧹 추가 타월", promptWater: "💧 생수 요청", promptTours: "🏎️ 투어 추천", promptSki: "🏔️ 스키 정보", promptDining: "🍝 식당 추천"
   }
 };
+
+// Safe helper function to avoid crashes on missing keys
+export const getTranslation = (lang: string, key: string): string => {
+  const currentLangObj = translations[lang as Language] || translations['en'];
+  return currentLangObj[key] || translations['en'][key] || key;
+};
