@@ -6,7 +6,7 @@ export interface Language {
   flag: string;
 }
 
-export className LANGUAGES: Language[] = [
+export const LANGUAGES: Language[] = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
   { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
   { code: 'it', name: 'Italiano', flag: '🇮🇹' },
