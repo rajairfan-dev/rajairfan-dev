@@ -27,32 +27,84 @@ export default function Requests({
   t
 }: RequestsProps) {
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-full">
+    <div className="p-4 sm:p-6 space-y-5 max-w-full">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">{t?.guestRequests || 'Guest Service Requests'}</h2>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             {t?.guestRequestsSub || 'Real-time housekeeping and concierge service requests'}
           </p>
         </div>
         <button
           onClick={fetchRequests}
           disabled={refreshingRequests}
-          className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm text-slate-600 disabled:opacity-50"
+          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm text-slate-600 disabled:opacity-50"
           title="Refresh Requests"
         >
           <RotateCw className={`w-4 h-4 ${refreshingRequests ? 'animate-spin text-indigo-600' : ''}`} />
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        {requests.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 text-sm font-medium">
-            No active service requests right now.
+      {requests.length === 0 ? (
+        <div className="p-8 text-center text-slate-500 text-sm font-medium bg-white rounded-2xl border border-slate-200 shadow-sm">
+          No active service requests right now.
+        </div>
+      ) : (
+        <>
+          {/* Mobile Card Layout (Visible on Small Screens) */}
+          <div className="space-y-3 md:hidden">
+            {requests.map((req) => (
+              <div key={req.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-extrabold">
+                    #{req.room_number}
+                  </span>
+                  {req.status === 'completed' ? (
+                    <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Completed</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-600">
+                      <Clock className="w-3 h-3" />
+                      <span>Pending</span>
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-sm font-semibold text-slate-800 border-l-2 border-indigo-500 pl-2">
+                  {req.request_text}
+                </p>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-[11px] text-slate-400">
+                    {new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    {req.status !== 'completed' && (
+                      <button
+                        onClick={() => handleUpdateReqStatus(req.id, 'completed')}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition shadow-sm"
+                      >
+                        Mark Complete
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDeleteRequest(req.id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-slate-100 rounded-lg transition"
+                      title="Delete Request"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        ) : (
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[650px]">
+
+          {/* Desktop Table View (Hidden on Mobile) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] uppercase tracking-wider font-bold text-slate-400">
                   <th className="py-3.5 px-4">{t?.roomNumber || 'Room'}</th>
@@ -70,7 +122,7 @@ export default function Requests({
                         #{req.room_number}
                       </span>
                     </td>
-                    <td className="py-4 px-4 font-medium text-slate-800 max-w-xs break-words">
+                    <td className="py-4 px-4 font-medium text-slate-800">
                       {req.request_text}
                     </td>
                     <td className="py-4 px-4">
@@ -113,8 +165,8 @@ export default function Requests({
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
