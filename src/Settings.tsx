@@ -1,56 +1,57 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-interface SettingsProps {
-  t: Record<string, string>;
-}
+export const Settings: React.FC = () => {
+  const [hotelName, setHotelName] = useState('AlpineStay');
+  const [wifiName, setWifiName] = useState('AlpineStay_Guest');
+  const [wifiPass, setWifiPass] = useState('alpine2026');
 
-export default function Settings({ t }: SettingsProps) {
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert('Settings Saved Successfully!');
+  };
+
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <h3 className="text-xl font-bold text-slate-900">{t.hotelSettingsTitle}</h3>
-        <p className="text-xs text-slate-500 mt-0.5">{t.hotelSettingsSubtitle}</p>
-      </div>
-
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <h4 className="font-bold text-slate-800 text-sm">{t.generalConfig}</h4>
-        
+    <div className="p-6 max-w-4xl mx-auto bg-white rounded-xl shadow-sm border my-4">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Hotel & App Settings</h2>
+      <form onSubmit={handleSave} className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Property / Hotel Name</label>
+          <input
+            type="text"
+            className="w-full p-2 border rounded-lg"
+            value={hotelName}
+            onChange={(e) => setHotelName(e.target.value)}
+          />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">{t.hotelName}</label>
-            <input type="text" defaultValue="AlpineStay" className="w-full p-2 text-sm border rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Wi-Fi Network Name (SSID)</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded-lg"
+              value={wifiName}
+              onChange={(e) => setWifiName(e.target.value)}
+            />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">{t.wifiSsid}</label>
-            <input type="text" defaultValue="AlpineStay" className="w-full p-2 text-sm border rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">{t.wifiPass}</label>
-            <input type="text" defaultValue="AlpineStay" className="w-full p-2 text-sm border rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">{t.breakfastTimings}</label>
-            <input type="text" defaultValue="7:00 AM - 10:30 AM" className="w-full p-2 text-sm border rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Wi-Fi Password</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded-lg"
+              value={wifiPass}
+              onChange={(e) => setWifiPass(e.target.value)}
+            />
           </div>
         </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <h4 className="font-bold text-slate-800 text-sm">{t.accountSecurity}</h4>
-        <div className="space-y-3 max-w-md">
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">{t.newPassword}</label>
-            <input type="password" placeholder="••••••••" className="w-full p-2 text-sm border rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">{t.confirmPassword}</label>
-            <input type="password" placeholder="••••••••" className="w-full p-2 text-sm border rounded-lg" />
-          </div>
-          <button className="px-4 py-2 bg-slate-600 text-white text-xs font-bold rounded-lg hover:bg-slate-700">
-            {t.updatePassword}
-          </button>
-        </div>
-      </div>
+        <button
+          type="submit"
+          className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700"
+        >
+          Save Settings
+        </button>
+      </form>
     </div>
   );
-}
+};
+
+export default Settings;
