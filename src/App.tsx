@@ -105,14 +105,27 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGuestMode, setIsGuestMode] = useState(false);
   
-  // Dynamic Language State with fallbacks
   const [lang, setLang] = useState<Language>('en');
   const t = translations[lang] || translations.en || {};
 
-  // Default fallbacks for safety against crashes
-  const promptsList = t?.prompts || translations.en?.prompts || [];
-  const welcomeMsgText = t?.welcomeMsg || translations.en?.welcomeMsg || 'Welcome to AlpineStay Concierge!';
-  const askPlaceholderText = t?.askPlaceholder || translations.en?.askPlaceholder || 'Ask a question...';
+  const defaultPrompts = [
+    { label: "🧹 Extra Towels", query: "Can you please bring extra towels to my room?" },
+    { label: "💧 Water Bottles", query: "Please send fresh bottled water to my room." },
+    { label: "🏔️ Dolomites Skiing", query: "What are the best skiing spots and tours in Dolomites?" },
+    { label: "🍷 Michelin Dining", query: "Recommend top Michelin dining options near the hotel." },
+    { label: "🏎️ Lombardy & Modena", query: "Tell me about day trips to Modena and Lombardy." },
+  ];
+
+  const promptsList = t?.prompts || defaultPrompts;
+  const welcomeMsgText = t?.welcomeMsg || `Welcome to AlpineStay! I am your 24/7 digital concierge for Northern Italy.
+
+• Wi-Fi: AlpineStay_Guest | Pass: alpine2026
+• Breakfast: 7:00 AM – 10:30 AM
+• Checkout: 11:00 AM
+
+How may I assist your luxury stay today?`;
+  
+  const askPlaceholderText = t?.askPlaceholder || 'Ask Wi-Fi pass, luxury tours, Michelin dining...';
 
   // Check-In Form State
   const [firstName, setFirstName] = useState('');
@@ -132,7 +145,6 @@ export default function App() {
   const [loadingGuests, setLoadingGuests] = useState(false);
   const [refreshingRequests, setRefreshingRequests] = useState(false);
 
-  // Modal QR State
   const [selectedQRRoom, setSelectedQRRoom] = useState<string | null>(null);
 
   // AI Chat States
@@ -142,21 +154,14 @@ export default function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Dynamic Welcome Message update on language change
   useEffect(() => {
-    setMessages((prev) => {
-      const isInitial = prev.length === 0 || (prev.length === 1 && prev[0].sender === 'ai');
-      if (isInitial) {
-        return [
-          {
-            id: '1',
-            sender: 'ai',
-            text: welcomeMsgText
-          }
-        ];
+    setMessages([
+      {
+        id: '1',
+        sender: 'ai',
+        text: welcomeMsgText
       }
-      return prev;
-    });
+    ]);
   }, [lang]);
 
   useEffect(() => {
@@ -232,7 +237,7 @@ export default function App() {
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } finally {
+    } fontally {
       setLoadingGuests(false);
     }
   }
@@ -381,8 +386,8 @@ export default function App() {
         content: m.text,
       }));
 
-      const langInstruction = `Please respond in ${languageList.find(l => l.code === lang)?.label || 'English'}. `;
-      const aiResponse = await askHotelAI(langInstruction + query, chatRoom, historyForAI);
+      // aiAgent.ts signature matching
+      const aiResponse = await askHotelAI(query, chatRoom, historyForAI, lang);
       const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponse };
       setMessages((prev) => [...prev, aiMsg]);
       
@@ -423,7 +428,7 @@ export default function App() {
 
   if (isGuestMode) {
     return (
-      <div className="flex flex-col h-screen bg-slate-100 font-sans">
+      <div className="flex flex-col h-screen bg-slate-50 font-sans">
         <header className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow-md">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold">
@@ -431,7 +436,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="font-bold text-sm leading-tight">AlpineStay Concierge</h1>
-              <p className="text-[10px] text-indigo-200">24/7 Service • Room #{chatRoom}</p>
+              <p className="text-[10px] text-indigo-200">24/7 Digital Concierge • Room #{chatRoom}</p>
             </div>
           </div>
 
@@ -465,10 +470,10 @@ export default function App() {
                 </div>
               )}
               <div
-                className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl text-sm leading-relaxed ${
+                className={`max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl text-sm leading-relaxed ${
                   msg.sender === 'user'
-                    ? 'bg-indigo-600 text-white rounded-br-none whitespace-pre-wrap shadow'
-                    : 'bg-white text-slate-800 shadow-sm border border-slate-200/80 rounded-bl-none'
+                    ? 'bg-indigo-600 text-white rounded-br-none whitespace-pre-wrap shadow-md font-medium'
+                    : 'bg-white text-slate-800 shadow-sm border border-slate-200/90 rounded-bl-none'
                 }`}
               >
                 {msg.sender === 'ai' ? (
@@ -488,19 +493,19 @@ export default function App() {
           {aiLoading && (
             <div className="flex items-center space-x-2 text-slate-500 text-sm pl-2">
               <Sparkles className="w-4 h-4 animate-spin text-indigo-600" />
-              <span>AlpineStay Concierge is replying...</span>
+              <span>AlpineStay Concierge is typing...</span>
             </div>
           )}
           <div ref={chatEndRef} />
         </div>
 
-        <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 overflow-x-auto flex space-x-2">
+        <div className="px-4 py-2 bg-white/80 backdrop-blur-md border-t border-slate-200 overflow-x-auto flex space-x-2 no-scrollbar">
           {promptsList.map((prompt: any, idx: number) => (
             <button
               key={idx}
               onClick={() => handleSendAIChat(prompt.query)}
               disabled={aiLoading}
-              className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-white text-indigo-600 border border-indigo-200/80 hover:bg-indigo-50 active:bg-indigo-100 whitespace-nowrap shadow-sm transition disabled:opacity-50"
+              className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-slate-100 text-indigo-700 hover:bg-indigo-50 border border-indigo-100/80 transition disabled:opacity-50 shrink-0 shadow-sm"
             >
               {prompt.label}
             </button>
@@ -1136,9 +1141,9 @@ export default function App() {
                       </div>
                     )}
                     <div
-                      className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl text-sm leading-relaxed ${
+                      className={`max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl text-sm leading-relaxed ${
                         msg.sender === 'user'
-                          ? 'bg-indigo-600 text-white rounded-br-none whitespace-pre-wrap'
+                          ? 'bg-indigo-600 text-white rounded-br-none whitespace-pre-wrap font-medium shadow'
                           : 'bg-white text-slate-800 shadow-sm border border-slate-200 rounded-bl-none'
                       }`}
                     >
@@ -1157,21 +1162,21 @@ export default function App() {
                 ))}
 
                 {aiLoading && (
-                  <div className="flex items-center space-x-2 text-slate-400 text-sm">
+                  <div className="flex items-center space-x-2 text-slate-400 text-sm pl-2">
                     <Sparkles className="w-4 h-4 animate-spin text-indigo-600" />
-                    <span>AlpineStay Concierge is responding...</span>
+                    <span>AlpineStay Concierge is typing...</span>
                   </div>
                 )}
                 <div ref={chatEndRef} />
               </div>
 
-              <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 overflow-x-auto flex space-x-2">
+              <div className="px-4 py-2 bg-white/80 backdrop-blur-md border-t border-slate-200 overflow-x-auto flex space-x-2 no-scrollbar">
                 {promptsList.map((prompt: any, idx: number) => (
                   <button
                     key={idx}
                     onClick={() => handleSendAIChat(prompt.query)}
                     disabled={aiLoading}
-                    className="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 active:bg-indigo-100 whitespace-nowrap shadow-sm transition disabled:opacity-50"
+                    className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-slate-100 text-indigo-700 hover:bg-indigo-50 border border-indigo-100/80 transition disabled:opacity-50 shrink-0 shadow-sm"
                   >
                     {prompt.label}
                   </button>
@@ -1190,12 +1195,12 @@ export default function App() {
                   placeholder={askPlaceholderText}
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  className="flex-1 px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <button
                   type="submit"
                   disabled={aiLoading || !chatInput.trim()}
-                  className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+                  className="bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-700 transition disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -1212,4 +1217,4 @@ export default function App() {
       </div>
     </div>
   );
-            }
+          }
