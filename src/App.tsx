@@ -237,7 +237,7 @@ How may I assist your luxury stay today?`;
       else setGuests(data || []);
     } catch (err) {
       console.error(err);
-    } fontally {
+    } finally {
       setLoadingGuests(false);
     }
   }
@@ -386,7 +386,6 @@ How may I assist your luxury stay today?`;
         content: m.text,
       }));
 
-      // aiAgent.ts signature matching
       const aiResponse = await askHotelAI(query, chatRoom, historyForAI, lang);
       const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponse };
       setMessages((prev) => [...prev, aiMsg]);
@@ -1217,4 +1216,4 @@ How may I assist your luxury stay today?`;
       </div>
     </div>
   );
-          }
+    }
