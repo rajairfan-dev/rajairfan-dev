@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, RotateCw, QrCode, LogOut, Globe } from 'lucide-react';
 
 interface Guest {
@@ -19,7 +19,7 @@ interface GuestsProps {
   filteredGuests: Guest[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  fetchGuests: () => void;
+  fetchGuests: () => Promise<void> | void;
   loadingGuests: boolean;
   setSelectedQRRoom: (room: string) => void;
   handleCheckOutGuest: (id: string) => void;
@@ -36,6 +36,21 @@ export default function Guests({
   handleCheckOutGuest,
   t
 }: GuestsProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await fetchGuests();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500); // Ensures rotation effect finishes nicely
+    }
+  };
+
+  const isLoading = loadingGuests || isRefreshing;
+
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-full overflow-hidden">
       <div>
@@ -58,12 +73,12 @@ export default function Guests({
         </div>
         <button
           type="button"
-          onClick={fetchGuests}
-          disabled={loadingGuests}
-          className="shrink-0 p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition shadow-sm text-slate-600 disabled:opacity-50 touch-manipulation cursor-pointer"
+          onClick={handleRefresh}
+          disabled={isLoading}
+          className="shrink-0 p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition shadow-sm text-slate-600 disabled:opacity-50 touch-manipulation cursor-pointer select-none"
           title="Refresh Guests"
         >
-          <RotateCw className={`w-4 h-4 ${loadingGuests ? 'animate-spin text-indigo-600' : ''}`} />
+          <RotateCw className={`w-4 h-4 transition-transform ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
         </button>
       </div>
 
@@ -193,4 +208,4 @@ export default function Guests({
       )}
     </div>
   );
-                  }
+      }
