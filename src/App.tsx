@@ -426,7 +426,7 @@ How may I assist your luxury stay today?`;
   if (isGuestMode) {
     return (
       <div className="flex flex-col h-screen bg-slate-50 font-sans">
-        <header className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow-md">
+        <header className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow-md shrink-0">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold">
               <Bot className="w-5 h-5 text-white" />
@@ -453,7 +453,7 @@ How may I assist your luxury stay today?`;
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -496,7 +496,7 @@ How may I assist your luxury stay today?`;
           <div ref={chatEndRef} />
         </div>
 
-        <div className="px-4 py-2 bg-white/80 backdrop-blur-md border-t border-slate-200 overflow-x-auto flex space-x-2 no-scrollbar">
+        <div className="px-4 py-2 bg-white/80 backdrop-blur-md border-t border-slate-200 overflow-x-auto flex space-x-2 no-scrollbar shrink-0">
           {promptsList.map((prompt: any, idx: number) => (
             <button
               key={idx}
@@ -514,7 +514,7 @@ How may I assist your luxury stay today?`;
             e.preventDefault();
             handleSendAIChat();
           }}
-          className="p-3 bg-white border-t border-slate-200 flex items-center space-x-2 shadow-lg"
+          className="p-3 bg-white border-t border-slate-200 flex items-center space-x-2 shadow-lg shrink-0"
         >
           <input
             type="text"
@@ -557,7 +557,7 @@ How may I assist your luxury stay today?`;
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   return (
-    <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-100 font-sans overflow-hidden w-screen">
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -615,7 +615,7 @@ How may I assist your luxury stay today?`;
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out flex flex-col justify-between ${
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out flex flex-col justify-between shrink-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -728,8 +728,8 @@ How may I assist your luxury stay today?`;
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="bg-white border-b border-slate-200 p-4 flex items-center justify-between">
+      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
+        <header className="bg-white border-b border-slate-200 p-4 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setIsSidebarOpen(true)}
@@ -758,7 +758,7 @@ How may I assist your luxury stay today?`;
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
           {activeTab === 'dashboard' && (
             <div className="p-4 sm:p-6 space-y-6">
               <Analytics guestsCount={guests.length} requests={requests} />
@@ -916,7 +916,7 @@ How may I assist your luxury stay today?`;
 
           {activeTab === 'ai' && (
             <div className="flex flex-col h-[calc(100vh-65px)] bg-slate-100">
-              <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow-sm">
+              <div className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow-sm shrink-0">
                 <div className="flex items-center space-x-2">
                   <Bot className="w-5 h-5" />
                   <span className="font-bold text-sm">AlpineStay Guest AI Concierge</span>
@@ -951,7 +951,7 @@ How may I assist your luxury stay today?`;
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
@@ -994,7 +994,7 @@ How may I assist your luxury stay today?`;
                 <div ref={chatEndRef} />
               </div>
 
-              <div className="px-4 py-2 bg-white/80 backdrop-blur-md border-t border-slate-200 overflow-x-auto flex space-x-2 no-scrollbar">
+              <div className="px-4 py-2 bg-white/80 backdrop-blur-md border-t border-slate-200 overflow-x-auto flex space-x-2 no-scrollbar shrink-0">
                 {promptsList.map((prompt: any, idx: number) => (
                   <button
                     key={idx}
@@ -1012,7 +1012,7 @@ How may I assist your luxury stay today?`;
                   e.preventDefault();
                   handleSendAIChat();
                 }}
-                className="p-3 bg-white border-t border-slate-200 flex items-center space-x-2"
+                className="p-3 bg-white border-t border-slate-200 flex items-center space-x-2 shrink-0"
               >
                 <input
                   type="text"
@@ -1041,4 +1041,4 @@ How may I assist your luxury stay today?`;
       </div>
     </div>
   );
-    }
+                  }
