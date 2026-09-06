@@ -27,8 +27,7 @@ import { askHotelAI, ChatMessage } from './aiAgent';
 import Settings from './Settings';
 import Login from './Login';
 import Analytics from './Analytics';
-
-type Language = 'en' | 'it' | 'de';
+import { languageList, translations, Language } from './translations';
 
 interface Guest {
   id: string;
@@ -57,90 +56,6 @@ interface Message {
   sender: 'user' | 'ai';
   text: string;
 }
-
-const translations = {
-  en: {
-    dashboard: 'Dashboard',
-    guests: 'Guests List',
-    requests: 'Requests',
-    aiConcierge: 'AI Concierge',
-    settings: 'Settings',
-    quickCheckIn: 'Quick Guest Check-In',
-    firstName: 'First Name',
-    surname: 'Surname / Last Name',
-    email: 'Email Address',
-    phone: 'Phone Number',
-    roomNumber: 'Room Number (e.g. 104)',
-    checkInDate: 'Check-In Date',
-    checkOutDate: 'Check-Out Date',
-    preferredLang: 'Preferred Language',
-    passportUpload: 'Upload Passport / ID Photo',
-    registerGuest: 'Register Guest',
-    activeGuests: 'Checked-In Guests',
-    searchPlaceholder: 'Search name, surname or room...',
-    refresh: 'Refresh',
-    noGuests: 'No active guests registered yet.',
-    guestRequests: 'Guest Service Requests',
-    manageRequests: 'Manage pending and completed requests',
-    actions: 'Actions',
-    done: 'Done',
-    reopen: 'Re-open'
-  },
-  it: {
-    dashboard: 'Pannello di Controllo',
-    guests: 'Elenco Ospiti',
-    requests: 'Richieste',
-    aiConcierge: 'Concierge AI',
-    settings: 'Impostazioni',
-    quickCheckIn: 'Registrazione Rapida Ospite',
-    firstName: 'Nome',
-    surname: 'Cognome',
-    email: 'Email',
-    phone: 'Numero di Telefono',
-    roomNumber: 'Numero Camera (es. 104)',
-    checkInDate: 'Data Check-In',
-    checkOutDate: 'Data Check-Out',
-    preferredLang: 'Lingua Preferita',
-    passportUpload: 'Carica Foto Passaporto / Documento',
-    registerGuest: 'Registra Ospite',
-    activeGuests: 'Ospiti In House',
-    searchPlaceholder: 'Cerca nome, cognome o camera...',
-    refresh: 'Aggiorna',
-    noGuests: 'Nessun ospite registrato al momento.',
-    guestRequests: 'Richieste Servizi Ospiti',
-    manageRequests: 'Gestisci le richieste in attesa e completate',
-    actions: 'Azioni',
-    done: 'Fatto',
-    reopen: 'Riapri'
-  },
-  de: {
-    dashboard: 'Dashboard',
-    guests: 'Gästeliste',
-    requests: 'Anfragen',
-    aiConcierge: 'KI Concierge',
-    settings: 'Einstellungen',
-    quickCheckIn: 'Schneller Gäste Check-In',
-    firstName: 'Vorname',
-    surname: 'Nachname',
-    email: 'E-Mail',
-    phone: 'Telefonnummer',
-    roomNumber: 'Zimmernummer (z. B. 104)',
-    checkInDate: 'Check-In-Datum',
-    checkOutDate: 'Check-Out-Datum',
-    preferredLang: 'Bevorzugte Sprache',
-    passportUpload: 'Reisepass / Ausweis hochladen',
-    registerGuest: 'Gast Registrieren',
-    activeGuests: 'Eingecheckte Gäste',
-    searchPlaceholder: 'Suche Name, Nachname oder Zimmer...',
-    refresh: 'Aktualisieren',
-    noGuests: 'Noch keine aktiven Gäste registriert.',
-    guestRequests: 'Gästeservice-Anfragen',
-    manageRequests: 'Offene und erledigte Anfragen verwalten',
-    actions: 'Aktionen',
-    done: 'Erledigt',
-    reopen: 'Wiederöffnen'
-  }
-};
 
 const FormattedText: React.FC<{ text: string }> = ({ text }) => {
   const parseInlineMarkdown = (content: string) => {
@@ -192,9 +107,9 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGuestMode, setIsGuestMode] = useState(false);
   
-  // Multilingual State
+  // Dynamic 13-Language State
   const [lang, setLang] = useState<Language>('en');
-  const t = translations[lang];
+  const t = translations[lang] || translations.en;
 
   // Check-In Form State
   const [firstName, setFirstName] = useState('');
@@ -712,7 +627,7 @@ export default function App() {
               }`}
             >
               <LayoutDashboard className="w-5 h-5" />
-              <span>{t.dashboard}</span>
+              <span>{t.dashboard || 'Dashboard'}</span>
             </button>
 
             <button
@@ -724,7 +639,7 @@ export default function App() {
               }`}
             >
               <Users className="w-5 h-5" />
-              <span>{t.guests}</span>
+              <span>{t.guests || 'Guests List'}</span>
             </button>
 
             <button
@@ -737,7 +652,7 @@ export default function App() {
             >
               <div className="flex items-center space-x-3">
                 <Bell className="w-5 h-5" />
-                <span>{t.requests}</span>
+                <span>{t.requests || 'Requests'}</span>
               </div>
               {pendingCount > 0 && (
                 <span className="px-2 py-0.5 text-xs bg-rose-500 text-white font-bold rounded-full animate-pulse">
@@ -755,7 +670,7 @@ export default function App() {
               }`}
             >
               <MessageSquare className="w-5 h-5" />
-              <span>{t.aiConcierge}</span>
+              <span>{t.aiConcierge || 'AI Concierge'}</span>
             </button>
 
             <button
@@ -767,7 +682,7 @@ export default function App() {
               }`}
             >
               <SettingsIcon className="w-5 h-5" />
-              <span>{t.settings}</span>
+              <span>{t.settings || 'Settings'}</span>
             </button>
           </nav>
         </div>
@@ -811,11 +726,13 @@ export default function App() {
             <select
               value={lang}
               onChange={(e) => setLang(e.target.value as Language)}
-              className="bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg p-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg p-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
-              <option value="en">🇬🇧 English</option>
-              <option value="it">🇮🇹 Italiano</option>
-              <option value="de">🇩🇪 Deutsch</option>
+              {languageList.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.flag} {item.label}
+                </option>
+              ))}
             </select>
           </div>
         </header>
@@ -828,14 +745,14 @@ export default function App() {
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div className="flex items-center space-x-2 mb-4">
                   <User className="w-5 h-5 text-indigo-600" />
-                  <h3 className="text-base font-bold text-slate-800">{t.quickCheckIn}</h3>
+                  <h3 className="text-base font-bold text-slate-800">{t.quickCheckIn || 'Quick Guest Check-In'}</h3>
                 </div>
 
                 <form onSubmit={handleAddGuest} className="space-y-4">
                   {/* Name and Surname */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.firstName}</label>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.firstName || 'First Name'}</label>
                       <input
                         type="text"
                         placeholder="John"
@@ -846,7 +763,7 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.surname}</label>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.surname || 'Surname / Last Name'}</label>
                       <input
                         type="text"
                         placeholder="Doe"
@@ -860,7 +777,7 @@ export default function App() {
                   {/* Email & Phone */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.email}</label>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.email || 'Email Address'}</label>
                       <input
                         type="email"
                         placeholder="john.doe@example.com"
@@ -870,7 +787,7 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.phone}</label>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.phone || 'Phone Number'}</label>
                       <input
                         type="tel"
                         placeholder="+39 333 1234567"
@@ -884,7 +801,7 @@ export default function App() {
                   {/* Room Number & Dates */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.roomNumber}</label>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.roomNumber || 'Room Number'}</label>
                       <input
                         type="text"
                         placeholder="104"
@@ -895,7 +812,7 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.checkInDate}</label>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.checkInDate || 'Check-In Date'}</label>
                       <input
                         type="date"
                         value={checkInDate}
@@ -904,7 +821,7 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.checkOutDate}</label>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.checkOutDate || 'Check-Out Date'}</label>
                       <input
                         type="date"
                         value={checkOutDate}
@@ -917,20 +834,22 @@ export default function App() {
                   {/* Language and Passport Upload */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.preferredLang}</label>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.preferredLang || 'Preferred Language'}</label>
                       <select
                         value={guestLang}
                         onChange={(e) => setGuestLang(e.target.value)}
                         className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                       >
-                        <option value="English">English</option>
-                        <option value="Italiano">Italiano</option>
-                        <option value="Deutsch">Deutsch</option>
+                        {languageList.map((l) => (
+                          <option key={l.code} value={l.label}>
+                            {l.flag} {l.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.passportUpload}</label>
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">{t.passportUpload || 'Upload Passport / ID Photo'}</label>
                       <div className="relative flex items-center">
                         <input
                           type="file"
@@ -947,7 +866,7 @@ export default function App() {
                     disabled={isSubmitting}
                     className="w-full sm:w-auto bg-indigo-600 text-white py-2.5 px-6 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-100 disabled:opacity-50"
                   >
-                    {isSubmitting ? 'Registering...' : t.registerGuest}
+                    {isSubmitting ? 'Registering...' : (t.registerGuest || 'Register Guest')}
                   </button>
                 </form>
               </div>
@@ -958,13 +877,13 @@ export default function App() {
             <div className="p-4 sm:p-6">
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <h3 className="font-bold text-slate-800 text-base">{t.activeGuests}</h3>
+                  <h3 className="font-bold text-slate-800 text-base">{t.activeGuests || 'Checked-In Guests'}</h3>
                   <div className="flex items-center space-x-2">
                     <div className="relative flex-1 sm:w-64">
                       <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
-                        placeholder={t.searchPlaceholder}
+                        placeholder={t.searchPlaceholder || 'Search name, surname or room...'}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
@@ -976,7 +895,7 @@ export default function App() {
                       className="px-3.5 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition flex items-center space-x-1.5 border border-indigo-200 active:scale-95 disabled:opacity-50 shrink-0"
                     >
                       <RotateCw className={`w-3.5 h-3.5 ${loadingGuests ? 'animate-spin' : ''}`} />
-                      <span>{t.refresh}</span>
+                      <span>{t.refresh || 'Refresh'}</span>
                     </button>
                   </div>
                 </div>
@@ -990,14 +909,14 @@ export default function App() {
                         <th className="p-3.5">Room #</th>
                         <th className="p-3.5">Check-In / Out</th>
                         <th className="p-3.5">Document</th>
-                        <th className="p-3.5 text-right pr-4">{t.actions}</th>
+                        <th className="p-3.5 text-right pr-4">{t.actions || 'Actions'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredGuests.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="p-6 text-center text-slate-400">
-                            {t.noGuests}
+                            {t.noGuests || 'No active guests registered yet.'}
                           </td>
                         </tr>
                       ) : (
@@ -1063,8 +982,8 @@ export default function App() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                   <div>
-                    <h3 className="font-bold text-slate-800 text-base">{t.guestRequests}</h3>
-                    <p className="text-xs text-slate-400">{t.manageRequests}</p>
+                    <h3 className="font-bold text-slate-800 text-base">{t.guestRequests || 'Guest Service Requests'}</h3>
+                    <p className="text-xs text-slate-400">{t.manageRequests || 'Manage pending and completed requests'}</p>
                   </div>
                   <button 
                     onClick={fetchRequests} 
@@ -1072,7 +991,7 @@ export default function App() {
                     className="px-3.5 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition flex items-center space-x-1.5 border border-indigo-200 active:scale-95 disabled:opacity-50"
                   >
                     <RotateCw className={`w-3.5 h-3.5 ${refreshingRequests ? 'animate-spin' : ''}`} />
-                    <span>{t.refresh}</span>
+                    <span>{t.refresh || 'Refresh'}</span>
                   </button>
                 </div>
 
@@ -1084,7 +1003,7 @@ export default function App() {
                         <th className="p-3.5">Request</th>
                         <th className="p-3.5 w-24">Time</th>
                         <th className="p-3.5 w-28">Status</th>
-                        <th className="p-3.5 text-right pr-4 w-36">{t.actions}</th>
+                        <th className="p-3.5 text-right pr-4 w-36">{t.actions || 'Actions'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1123,14 +1042,14 @@ export default function App() {
                                   onClick={() => handleUpdateReqStatus(req.id, 'completed')}
                                   className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold shadow-sm transition"
                                 >
-                                  {t.done}
+                                  {t.done || 'Done'}
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => handleUpdateReqStatus(req.id, 'pending')}
                                   className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-xs font-medium transition"
                                 >
-                                  {t.reopen}
+                                  {t.reopen || 'Re-open'}
                                 </button>
                               )}
                               <button
@@ -1260,4 +1179,4 @@ export default function App() {
       </div>
     </div>
   );
-      }
+}
