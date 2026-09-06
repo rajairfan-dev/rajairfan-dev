@@ -23,10 +23,10 @@ export default function Guests({
   t,
 }: GuestsProps) {
   return (
-    <div className="p-4 sm:p-6">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="p-3 sm:p-6 w-full max-w-full">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h3 className="font-bold text-slate-800 text-base">{t?.activeGuests || 'Checked-In Guests'}</h3>
+          <h3 className="font-bold text-slate-800 text-base">{t?.activeGuests || 'Active Guests'}</h3>
           <div className="flex items-center space-x-2">
             <div className="relative flex-1 sm:w-64">
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
@@ -49,10 +49,10 @@ export default function Guests({
           </div>
         </div>
 
-        {/* Responsive Mobile Horizontal Scroll Fix */}
+        {/* Mobile Smooth Horizontal Scroll Container */}
         <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-[650px] text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+          <table className="w-full min-w-[700px] text-left text-sm text-slate-600">
+            <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200 whitespace-nowrap">
               <tr>
                 <th className="p-3.5 pl-4">Guest Name</th>
                 <th className="p-3.5">Contact</th>
@@ -72,12 +72,12 @@ export default function Guests({
               ) : (
                 filteredGuests.map((g) => (
                   <tr key={g.id} className="hover:bg-slate-50 transition">
-                    <td className="p-3.5 pl-4 font-bold text-slate-800">{g.name}</td>
-                    <td className="p-3.5 text-xs text-slate-500">
+                    <td className="p-3.5 pl-4 font-bold text-slate-800 whitespace-nowrap">{g.name}</td>
+                    <td className="p-3.5 text-xs text-slate-500 whitespace-nowrap">
                       <div>{g.email || '-'}</div>
                       <div className="text-[11px] text-slate-400">{g.phone || '-'}</div>
                     </td>
-                    <td className="p-3.5">
+                    <td className="p-3.5 whitespace-nowrap">
                       <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/50">
                         Room {g.room_number}
                       </span>
@@ -85,7 +85,7 @@ export default function Guests({
                     <td className="p-3.5 text-xs text-slate-500 whitespace-nowrap">
                       {g.check_in_date || new Date(g.created_at).toLocaleDateString()} {g.check_out_date ? `→ ${g.check_out_date}` : ''}
                     </td>
-                    <td className="p-3.5 text-xs">
+                    <td className="p-3.5 text-xs whitespace-nowrap">
                       {g.passport_url ? (
                         <a href={g.passport_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:underline">
                           View Passport
