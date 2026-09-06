@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RotateCw, CheckCircle, Trash2, Clock } from 'lucide-react';
 
 interface GuestRequest {
@@ -11,7 +11,7 @@ interface GuestRequest {
 
 interface RequestsProps {
   requests: GuestRequest[];
-  fetchRequests: () => void;
+  fetchRequests: () => Promise<void> | void;
   refreshingRequests: boolean;
   handleUpdateReqStatus: (id: string, status: string) => void;
   handleDeleteRequest: (id: string) => void;
@@ -26,6 +26,21 @@ export default function Requests({
   handleDeleteRequest,
   t
 }: RequestsProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await fetchRequests();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500); // Keeps rotation visible smoothly
+    }
+  };
+
+  const isLoading = refreshingRequests || isRefreshing;
+
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-full overflow-hidden">
       <div className="flex items-center justify-between gap-3 w-full">
@@ -37,12 +52,12 @@ export default function Requests({
         </div>
         <button
           type="button"
-          onClick={fetchRequests}
-          disabled={refreshingRequests}
-          className="shrink-0 p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition shadow-sm text-slate-600 disabled:opacity-50 touch-manipulation cursor-pointer"
+          onClick={handleRefresh}
+          disabled={isLoading}
+          className="shrink-0 p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition shadow-sm text-slate-600 disabled:opacity-50 touch-manipulation cursor-pointer select-none"
           title="Refresh Requests"
         >
-          <RotateCw className={`w-4 h-4 ${refreshingRequests ? 'animate-spin text-indigo-600' : ''}`} />
+          <RotateCw className={`w-4 h-4 transition-transform ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
         </button>
       </div>
 
@@ -174,4 +189,4 @@ export default function Requests({
       )}
     </div>
   );
-                  }
+                    }
