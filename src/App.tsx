@@ -133,25 +133,28 @@ export default function App() {
   const [selectedQRRoom, setSelectedQRRoom] = useState<string | null>(null);
 
   // AI Chat States
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      sender: 'ai',
-      text: "Welcome to AlpineStay! I am your 24/7 digital concierge for Northern Italy.\n\n• Wi-Fi: AlpineStay_Guest | Pass: alpine2026\n• Breakfast: 7:00 AM – 10:30 AM\n• Checkout: 11:00 AM\n\nHow may I assist your luxury stay today?"
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatRoom, setChatRoom] = useState('101');
   const [aiLoading, setAiLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const quickPrompts = [
-    { label: '🧹 Extra Towels', query: 'Please send 2 extra towels to my room.' },
-    { label: '💧 Water Bottles', query: 'Can housekeeping bring extra bottled water?' },
-    { label: '🏎️ Lombardy & Modena', query: 'Suggest a luxury trip for Lombardy (Milan) and Emilia-Romagna (Ferrari/Modena).' },
-    { label: '🏔️ Dolomites Skiing', query: 'Recommend premier ski resorts and luxury chalets in the Dolomites.' },
-    { label: '🍝 Michelin Dining', query: 'What are the top Michelin-starred restaurants near Lake Garda?' }
-  ];
+  // Dynamic Welcome Message update on language change
+  useEffect(() => {
+    setMessages((prev) => {
+      const isInitial = prev.length === 0 || (prev.length === 1 && prev[0].sender === 'ai');
+      if (isInitial) {
+        return [
+          {
+            id: '1',
+            sender: 'ai',
+            text: t.welcomeMsg
+          }
+        ];
+      }
+      return prev;
+    });
+  }, [lang]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -209,10 +212,10 @@ export default function App() {
   }, [session]);
 
   useEffect(() => {
-    if (activeTab === 'ai') {
+    if (activeTab === 'ai' || isGuestMode) {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, aiLoading, activeTab]);
+  }, [messages, aiLoading, activeTab, isGuestMode]);
 
   async function fetchGuests() {
     try {
@@ -375,7 +378,8 @@ export default function App() {
         content: m.text,
       }));
 
-      const aiResponse = await askHotelAI(query, chatRoom, historyForAI);
+      const langInstruction = `Please respond in ${languageList.find(l => l.code === lang)?.label || 'English'}. `;
+      const aiResponse = await askHotelAI(langInstruction + query, chatRoom, historyForAI);
       const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponse };
       setMessages((prev) => [...prev, aiMsg]);
       
@@ -417,18 +421,30 @@ export default function App() {
   if (isGuestMode) {
     return (
       <div className="flex flex-col h-screen bg-slate-100 font-sans">
-        <header className="bg-indigo-600 text-white px-5 py-3.5 flex justify-between items-center shadow-md">
-          <div className="flex items-center space-x-3">
+        <header className="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow-md">
+          <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold">
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-base leading-tight">AlpineStay Concierge</h1>
-              <p className="text-[11px] text-indigo-200">24/7 Room Service & AI Assistance</p>
+              <h1 className="font-bold text-sm leading-tight">AlpineStay Concierge</h1>
+              <p className="text-[10px] text-indigo-200">24/7 Service • Room #{chatRoom}</p>
             </div>
           </div>
-          <div className="bg-indigo-800/80 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
-            Room #{chatRoom}
+
+          <div className="flex items-center space-x-1.5 bg-indigo-700/80 px-2 py-1 rounded-lg border border-indigo-400/30">
+            <Globe className="w-3.5 h-3.5 text-indigo-200" />
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as Language)}
+              className="bg-transparent text-white text-xs font-semibold focus:outline-none cursor-pointer"
+            >
+              {languageList.map((item) => (
+                <option key={item.code} value={item.code} className="text-slate-800">
+                  {item.flag} {item.label}
+                </option>
+              ))}
+            </select>
           </div>
         </header>
 
@@ -476,7 +492,7 @@ export default function App() {
         </div>
 
         <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 overflow-x-auto flex space-x-2">
-          {quickPrompts.map((prompt, idx) => (
+          {t.prompts.map((prompt, idx) => (
             <button
               key={idx}
               onClick={() => handleSendAIChat(prompt.query)}
@@ -497,7 +513,7 @@ export default function App() {
         >
           <input
             type="text"
-            placeholder="Ask Wi-Fi pass, towels, food..."
+            placeholder={t.askPlaceholder}
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             className="flex-1 px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -749,7 +765,6 @@ export default function App() {
                 </div>
 
                 <form onSubmit={handleAddGuest} className="space-y-4">
-                  {/* Name and Surname */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">{t.firstName || 'First Name'}</label>
@@ -774,7 +789,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Email & Phone */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">{t.email || 'Email Address'}</label>
@@ -798,7 +812,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Room Number & Dates */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">{t.roomNumber || 'Room Number'}</label>
@@ -831,7 +844,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Language and Passport Upload */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 mb-1">{t.preferredLang || 'Preferred Language'}</label>
@@ -1077,15 +1089,34 @@ export default function App() {
                   <Bot className="w-5 h-5" />
                   <span className="font-bold text-sm">AlpineStay Guest AI Concierge</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-indigo-200">Room #</span>
-                  <input
-                    type="text"
-                    placeholder="101"
-                    value={chatRoom}
-                    onChange={(e) => setChatRoom(e.target.value)}
-                    className="w-16 px-2 py-1 text-xs rounded bg-indigo-700 text-white placeholder-indigo-300 focus:outline-none font-semibold"
-                  />
+                
+                <div className="flex items-center space-x-3">
+                  {/* Language Selector inside AI Concierge Tab Header */}
+                  <div className="flex items-center space-x-1 bg-indigo-700/80 px-2 py-1 rounded-lg border border-indigo-400/30">
+                    <Globe className="w-3.5 h-3.5 text-indigo-200" />
+                    <select
+                      value={lang}
+                      onChange={(e) => setLang(e.target.value as Language)}
+                      className="bg-transparent text-white text-xs font-semibold focus:outline-none cursor-pointer"
+                    >
+                      {languageList.map((item) => (
+                        <option key={item.code} value={item.code} className="text-slate-800">
+                          {item.flag} {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-xs text-indigo-200">Room #</span>
+                    <input
+                      type="text"
+                      placeholder="101"
+                      value={chatRoom}
+                      onChange={(e) => setChatRoom(e.target.value)}
+                      className="w-16 px-2 py-1 text-xs rounded bg-indigo-700 text-white placeholder-indigo-300 focus:outline-none font-semibold"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1132,8 +1163,9 @@ export default function App() {
                 <div ref={chatEndRef} />
               </div>
 
+              {/* Dynamic Quick Prompts */}
               <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 overflow-x-auto flex space-x-2">
-                {quickPrompts.map((prompt, idx) => (
+                {t.prompts.map((prompt, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSendAIChat(prompt.query)}
@@ -1154,7 +1186,7 @@ export default function App() {
               >
                 <input
                   type="text"
-                  placeholder="Ask Wi-Fi pass, luxury tours, Michelin dining..."
+                  placeholder={t.askPlaceholder}
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   className="flex-1 px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1179,4 +1211,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+        }
