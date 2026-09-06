@@ -1,30 +1,9 @@
 import React from 'react';
-
-export interface Language {
-  code: string;
-  name: string;
-  flag: string;
-}
-
-export const LANGUAGES: Language[] = [
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'pl', name: 'Polski', flag: '🇵🇱' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-  { code: 'sv', name: 'Svenska', flag: '🇸🇪' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵' },
-  { code: 'ko', name: '한국어', flag: '🇰🇷' },
-];
+import { languageList, Language } from './translations';
 
 interface LanguageSelectorProps {
   currentLanguage: string;
-  onLanguageChange: (code: string) => void;
+  onLanguageChange: (lang: Language) => void;
 }
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
@@ -34,12 +13,12 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   return (
     <select
       value={currentLanguage}
-      onChange={(e) => onLanguageChange(e.target.value)}
-      className="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      onChange={(e) => onLanguageChange(e.target.value as Language)}
+      className="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer"
     >
-      {LANGUAGES.map((lang) => (
+      {languageList.map((lang) => (
         <option key={lang.code} value={lang.code}>
-          {lang.flag} {lang.name}
+          {lang.flag} {lang.label}
         </option>
       ))}
     </select>
