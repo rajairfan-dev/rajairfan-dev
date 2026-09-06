@@ -252,7 +252,7 @@ How may I assist your luxury stay today?`;
       else setRequests(data || []);
     } catch (err) {
       console.error(err);
-    } finally {
+    } fontally {
       setRefreshingRequests(false);
     }
   }
@@ -1045,4 +1045,4 @@ How may I assist your luxury stay today?`;
       </div>
     </div>
   );
-          }
+        }
