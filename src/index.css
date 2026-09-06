@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 /* Sleek Concierge Chat Styling */
 .ai-bubble {
   background: #f8fafc !important;
@@ -26,4 +27,25 @@
 
 .ai-bubble li {
   margin-bottom: 6px !important;
+}
+
+/* Global Responsive Layout & Overflow Controls */
+html, 
+body, 
+#root {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom scrollbar styling for wide tables */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
