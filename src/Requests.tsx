@@ -19,8 +19,8 @@ export default function Requests({
   t,
 }: RequestsProps) {
   return (
-    <div className="p-4 sm:p-6">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="p-3 sm:p-6 w-full max-w-full">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
           <div>
             <h3 className="font-bold text-slate-800 text-base">{t?.guestRequests || 'Guest Service Requests'}</h3>
@@ -29,21 +29,21 @@ export default function Requests({
           <button
             onClick={fetchRequests}
             disabled={refreshingRequests}
-            className="px-3.5 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition flex items-center space-x-1.5 border border-indigo-200 active:scale-95 disabled:opacity-50"
+            className="px-3.5 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition flex items-center space-x-1.5 border border-indigo-200 active:scale-95 disabled:opacity-50 shrink-0"
           >
             <RotateCw className={`w-3.5 h-3.5 ${refreshingRequests ? 'animate-spin' : ''}`} />
             <span>{t?.refresh || 'Refresh'}</span>
           </button>
         </div>
 
-        {/* Responsive Mobile Horizontal Scroll Fix */}
+        {/* Mobile Smooth Horizontal Scroll Container */}
         <div className="w-full overflow-x-auto">
           <table className="w-full min-w-[650px] text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+            <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200 whitespace-nowrap">
               <tr>
                 <th className="p-3.5 pl-4 w-28">Room #</th>
                 <th className="p-3.5">Request</th>
-                <th className="p-3.5 w-24">Time</th>
+                <th className="p-3.5 w-28">Time</th>
                 <th className="p-3.5 w-28">Status</th>
                 <th className="p-3.5 text-right pr-4 w-36">{t?.actions || 'Actions'}</th>
               </tr>
@@ -58,8 +58,12 @@ export default function Requests({
               ) : (
                 requests.map((req) => (
                   <tr key={req.id} className="hover:bg-slate-50/80 transition">
-                    <td className="p-3.5 pl-4 font-bold text-slate-800 whitespace-nowrap">Room {req.room_number}</td>
-                    <td className="p-3.5 min-w-[200px] break-words">{req.request_text}</td>
+                    <td className="p-3.5 pl-4 font-bold text-slate-800 whitespace-nowrap">
+                      <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/50">
+                        Room {req.room_number}
+                      </span>
+                    </td>
+                    <td className="p-3.5 min-w-[220px] text-slate-800 font-medium">{req.request_text}</td>
                     <td className="p-3.5 text-xs text-slate-400 whitespace-nowrap">
                       {new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
@@ -92,7 +96,7 @@ export default function Requests({
                       )}
                       <button
                         onClick={() => handleDeleteRequest(req.id)}
-                        className="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition border border-rose-200/50 inline-flex items-center align-middle"
+                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition border border-rose-200/50 inline-flex items-center align-middle"
                         title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
