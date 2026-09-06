@@ -19,8 +19,8 @@ export default function Requests({
   t,
 }: RequestsProps) {
   return (
-    <div className="p-3 sm:p-6 w-full max-w-full">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+    <div className="p-3 sm:p-6 w-full max-w-full overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm w-full overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
           <div>
             <h3 className="font-bold text-slate-800 text-base">{t?.guestRequests || 'Guest Service Requests'}</h3>
@@ -36,9 +36,9 @@ export default function Requests({
           </button>
         </div>
 
-        {/* Mobile Smooth Horizontal Scroll Container */}
+        {/* Clean Responsive Horizontal Scroll */}
         <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-[650px] text-left text-sm text-slate-600">
+          <table className="w-full min-w-[650px] text-left text-sm text-slate-600 border-collapse">
             <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200 whitespace-nowrap">
               <tr>
                 <th className="p-3.5 pl-4 w-28">Room #</th>
@@ -60,10 +60,10 @@ export default function Requests({
                   <tr key={req.id} className="hover:bg-slate-50/80 transition">
                     <td className="p-3.5 pl-4 font-bold text-slate-800 whitespace-nowrap">
                       <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/50">
-                        Room {req.room_number}
+                        Room {req.room_number || 'N/A'}
                       </span>
                     </td>
-                    <td className="p-3.5 min-w-[220px] text-slate-800 font-medium">{req.request_text}</td>
+                    <td className="p-3.5 min-w-[200px] text-slate-800 font-medium">{req.request_text}</td>
                     <td className="p-3.5 text-xs text-slate-400 whitespace-nowrap">
                       {new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
