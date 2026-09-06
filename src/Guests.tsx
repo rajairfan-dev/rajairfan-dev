@@ -23,8 +23,8 @@ export default function Guests({
   t,
 }: GuestsProps) {
   return (
-    <div className="p-3 sm:p-6 w-full max-w-full">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+    <div className="p-3 sm:p-6 w-full max-w-full overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm w-full overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h3 className="font-bold text-slate-800 text-base">{t?.activeGuests || 'Active Guests'}</h3>
           <div className="flex items-center space-x-2">
@@ -49,9 +49,9 @@ export default function Guests({
           </div>
         </div>
 
-        {/* Mobile Smooth Horizontal Scroll Container */}
+        {/* Clean Responsive Horizontal Scroll */}
         <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-[700px] text-left text-sm text-slate-600">
+          <table className="w-full min-w-[750px] text-left text-sm text-slate-600 border-collapse">
             <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200 whitespace-nowrap">
               <tr>
                 <th className="p-3.5 pl-4">Guest Name</th>
