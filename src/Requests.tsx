@@ -27,18 +27,19 @@ export default function Requests({
   t
 }: RequestsProps) {
   return (
-    <div className="p-4 sm:p-6 space-y-5 max-w-full">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-extrabold text-slate-900">{t?.guestRequests || 'Guest Service Requests'}</h2>
+    <div className="p-4 sm:p-6 space-y-5 max-w-full overflow-hidden">
+      <div className="flex items-center justify-between gap-3 w-full">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl font-extrabold text-slate-900 truncate">{t?.guestRequests || 'Guest Service Requests'}</h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {t?.guestRequestsSub || 'Real-time housekeeping and concierge service requests'}
           </p>
         </div>
         <button
+          type="button"
           onClick={fetchRequests}
           disabled={refreshingRequests}
-          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm text-slate-600 disabled:opacity-50"
+          className="shrink-0 p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white border border-slate-200 rounded-xl hover:bg-slate-50 active:bg-slate-100 transition shadow-sm text-slate-600 disabled:opacity-50 touch-manipulation cursor-pointer"
           title="Refresh Requests"
         >
           <RotateCw className={`w-4 h-4 ${refreshingRequests ? 'animate-spin text-indigo-600' : ''}`} />
@@ -51,7 +52,7 @@ export default function Requests({
         </div>
       ) : (
         <>
-          {/* Mobile Card Layout (Visible on Small Screens) */}
+          {/* Mobile Card Layout */}
           <div className="space-y-3 md:hidden">
             {requests.map((req) => (
               <div key={req.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -83,6 +84,7 @@ export default function Requests({
                   <div className="flex items-center space-x-2">
                     {req.status !== 'completed' && (
                       <button
+                        type="button"
                         onClick={() => handleUpdateReqStatus(req.id, 'completed')}
                         className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition shadow-sm"
                       >
@@ -90,6 +92,7 @@ export default function Requests({
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() => handleDeleteRequest(req.id)}
                       className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-slate-100 rounded-lg transition"
                       title="Delete Request"
@@ -102,7 +105,7 @@ export default function Requests({
             ))}
           </div>
 
-          {/* Desktop Table View (Hidden on Mobile) */}
+          {/* Desktop Table View */}
           <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -145,6 +148,7 @@ export default function Requests({
                       <div className="flex items-center justify-end space-x-2">
                         {req.status !== 'completed' && (
                           <button
+                            type="button"
                             onClick={() => handleUpdateReqStatus(req.id, 'completed')}
                             className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition shadow-sm"
                           >
@@ -152,6 +156,7 @@ export default function Requests({
                           </button>
                         )}
                         <button
+                          type="button"
                           onClick={() => handleDeleteRequest(req.id)}
                           className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-slate-100 rounded-lg transition"
                           title="Delete Request"
@@ -169,4 +174,4 @@ export default function Requests({
       )}
     </div>
   );
-}
+                  }
