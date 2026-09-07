@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, RotateCw, QrCode, LogOut, Globe } from 'lucide-react';
+import ExportButton from './ExportButton';
 
 interface Guest {
   id: string;
@@ -80,6 +81,7 @@ export default function Guests({
         >
           <RotateCw className={`w-4 h-4 transition-transform ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
         </button>
+        <ExportButton data={filteredGuests} />
       </div>
 
       {filteredGuests.length === 0 ? (
@@ -208,4 +210,4 @@ export default function Guests({
       )}
     </div>
   );
-      }
+                    }
