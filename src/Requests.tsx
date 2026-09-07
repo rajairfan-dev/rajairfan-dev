@@ -45,9 +45,11 @@ export default function Requests({
     <div className="p-4 sm:p-6 space-y-5 max-w-full overflow-hidden">
       <div className="flex items-center justify-between gap-3 w-full">
         <div className="min-w-0 flex-1">
-          <h2 className="text-xl font-extrabold text-slate-900 truncate">{t?.guestRequests || 'Guest Service Requests'}</h2>
+          <h2 className="text-xl font-extrabold text-slate-900 truncate">
+            {t?.guestServiceRequests || t?.guestRequests || 'Guest Service Requests'}
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            {t?.guestRequestsSub || 'Real-time housekeeping and concierge service requests'}
+            {t?.guestServiceRequestsSub || t?.guestRequestsSub || 'Real-time housekeeping and concierge service requests'}
           </p>
         </div>
         <button
@@ -189,4 +191,4 @@ export default function Requests({
       )}
     </div>
   );
-                    }
+}
